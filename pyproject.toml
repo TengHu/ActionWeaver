@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "actionweaver"
+version = "0.0.1"
+description = ""
+authors = ['Teng "Niel" Hu <hu.niel92@gmail.com>']
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pydantic = "^2.2.0"
+openai = "^0.27.8"
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "^4.0.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
