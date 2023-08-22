@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from actionweaver.utils import create_pydantic_model_from_signature
+from actionweaver.utils import create_pydantic_model_from_func
 
 
 class ActionException(Exception):
     pass
 
 
-def action(name, scope="global", logger=None):
+def action(name, scope="global", logger=None, models=[]):
     """
     Decorator function to create an Action object.
 
@@ -18,6 +18,7 @@ def action(name, scope="global", logger=None):
     - name (str): Name of the action.
     - scope (str): Scope of the action, default is "global".
     - logger (logging.Logger): Logger instance to log information, default is None.
+    - models (list[pydantic.BaseModel]): List of pydantic models to be used in the action.
 
     Returns:
     - create_action: A function that takes a decorated object and returns an Action object.
@@ -30,7 +31,8 @@ def action(name, scope="global", logger=None):
 
         action = Action(
             name=name, scope=scope, decorated_obj=decorated_obj, logger=_logger
-        )
+        ).build_pydantic_model_cls(models=models)
+
         return action
 
     return create_action
@@ -54,10 +56,18 @@ class Action:
             )
 
         self.description = decorated_obj.__doc__
-        self.pydantic_cls = create_pydantic_model_from_signature(
-            decorated_obj, decorated_obj.__name__.title()
-        )
+        self.pydantic_cls = None
+
         self.decorated_method = decorated_obj
+
+    def build_pydantic_model_cls(self, models=None):
+        if models is None:
+            models = []
+
+        self.pydantic_cls = create_pydantic_model_from_func(
+            self.decorated_method, self.decorated_method.__name__.title(), models=models
+        )
+        return self
 
     def json_schema(self):
         return self.pydantic_cls.model_json_schema()
