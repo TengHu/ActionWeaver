@@ -6,11 +6,11 @@ import unittest
 from pydantic import BaseModel, create_model
 
 from actionweaver.cache import cache, lru_cache, preserve_original_signature
-from actionweaver.utils import create_pydantic_model_from_signature
+from actionweaver.utils import create_pydantic_model_from_func
 
 
 class UtilsTestCase(unittest.TestCase):
-    def test_create_pydantic_model_from_signature(self):
+    def create_pydantic_model_from_func(self):
         def foo(bar1: int, bar2: int, bar3: str = "qux"):
             pass
 
@@ -48,7 +48,91 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def test_create_pydantic_model_from_signature_with_decorators(self):
+    def create_pydantic_model_from_func_with_pydantic_argument(self):
+        class Person(BaseModel):
+            first_name: str
+            last_name: str
+            age: int
+            email: str
+
+        class Persons(BaseModel):
+            persons: list[Person]
+
+        def foo(a: int, person: Person):
+            pass
+
+        def bar(a: int, persons: Persons):
+            pass
+
+        Foo = create_pydantic_model_from_func(foo, "Foo", models=[Person])
+
+        self.assertEqual(
+            Foo.model_json_schema(),
+            {
+                "$defs": {
+                    "Person": {
+                        "properties": {
+                            "first_name": {"title": "First Name", "type": "string"},
+                            "last_name": {"title": "Last Name", "type": "string"},
+                            "age": {"title": "Age", "type": "integer"},
+                            "email": {"title": "Email", "type": "string"},
+                        },
+                        "required": ["first_name", "last_name", "age", "email"],
+                        "title": "Person",
+                        "type": "object",
+                    }
+                },
+                "properties": {
+                    "a": {"title": "A", "type": "integer"},
+                    "person": {"$ref": "#/$defs/Person"},
+                },
+                "required": ["a", "person"],
+                "title": "Foo",
+                "type": "object",
+            },
+        )
+
+        Bar = create_pydantic_model_from_func(bar, "Bar", models=[Persons])
+
+        self.assertEqual(
+            Bar.model_json_schema(),
+            {
+                "$defs": {
+                    "Person": {
+                        "properties": {
+                            "first_name": {"title": "First Name", "type": "string"},
+                            "last_name": {"title": "Last Name", "type": "string"},
+                            "age": {"title": "Age", "type": "integer"},
+                            "email": {"title": "Email", "type": "string"},
+                        },
+                        "required": ["first_name", "last_name", "age", "email"],
+                        "title": "Person",
+                        "type": "object",
+                    },
+                    "Persons": {
+                        "properties": {
+                            "persons": {
+                                "items": {"$ref": "#/$defs/Person"},
+                                "title": "Persons",
+                                "type": "array",
+                            }
+                        },
+                        "required": ["persons"],
+                        "title": "Persons",
+                        "type": "object",
+                    },
+                },
+                "properties": {
+                    "a": {"title": "A", "type": "integer"},
+                    "persons": {"$ref": "#/$defs/Persons"},
+                },
+                "required": ["a", "persons"],
+                "title": "Bar",
+                "type": "object",
+            },
+        )
+
+    def create_pydantic_model_from_func_with_decorators(self):
         @cache
         def foo1(bar1: int, bar2: int, bar3: str = "qux"):
             """foo"""

@@ -13,6 +13,10 @@ class TokenUsageTracker:
         self.tracker = collections.Counter()
         self.budget = budget
 
+    def clear(self):
+        self.tracker = collections.Counter()
+        return self
+
     def track_usage(self, usage: Dict):
         self.tracker = self.tracker + collections.Counter(usage)
 

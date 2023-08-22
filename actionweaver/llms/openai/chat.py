@@ -20,6 +20,9 @@ class OpenAIChatCompletion:
         self.action_handlers = action_handlers
 
     def create(self, messages, *args, scope=None, **kwargs):
+        # Restart token usage tracker
+        self.token_usage_tracker.clear()
+
         if scope is None:
             scope = "global"
 
@@ -111,6 +114,7 @@ class OpenAIChatCompletion:
                     }
                 ]
 
+                # Todo: add color and better readability
                 self.logger.debug(
                     f"[OpenAIChatCompletion {self.model}] Action: {name} invoked with arguments: {arguments}. \n\nResponse: {function_response}"
                 )
