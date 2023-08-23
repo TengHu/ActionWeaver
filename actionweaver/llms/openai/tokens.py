@@ -1,5 +1,6 @@
 import collections
 import logging
+import time
 from typing import Dict
 
 
@@ -21,15 +22,25 @@ class TokenUsageTracker:
         self.tracker = self.tracker + collections.Counter(usage)
 
         self.logger.debug(
-            f"token used: {usage}, total: {dict(self.tracker)}, budget: {self.budget}"
+            {
+                "message": "token usage updated",
+                "usage": usage,
+                "total_usage": dict(self.tracker),
+                "timestamp": time.time(),
+                "budget": self.budget,
+            },
         )
-
         if self.budget is not None and self.tracker["total_tokens"] > self.budget:
             self.logger.error(
-                f"Token budget exceeded. Usage: {dict(self.tracker)}, Budget: {self.budget}"
+                {
+                    "message": "Token budget exceeded",
+                    "usage": usage,
+                    "total_usage": dict(self.tracker),
+                    "budget": self.budget,
+                },
+                exc_info=True,
             )
             raise TokenUsageTrackerException(
                 f"Token budget exceeded. Budget: {self.budget}, Usage: {dict(self.tracker)}"
             )
-
         return self.tracker

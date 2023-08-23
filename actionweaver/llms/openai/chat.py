@@ -1,10 +1,15 @@
 import json
 import logging
+import time
 
 import openai
 
 from actionweaver.action import ActionHandlers
 from actionweaver.llms.openai.tokens import TokenUsageTracker
+
+
+class OpenAIChatCompletionException(Exception):
+    pass
 
 
 class OpenAIChatCompletion:
@@ -27,108 +32,198 @@ class OpenAIChatCompletion:
             scope = "global"
 
         self.logger.debug(
-            f"[OpenAIChatCompletion {self.model}] Creating chat completion with scope: {scope} and messages: {messages}"
+            {
+                "message": "Creating new chat completion",
+                "model": self.model,
+                "scope": scope,
+                "input_messages": messages,
+                "timestamp": time.time(),
+            }
         )
 
-        functions = []
-        if len(self.action_handlers) > 0:
-            functions = [
-                {
-                    "name": action.name,
-                    "description": action.description,
-                    "parameters": action.json_schema(),
-                }
-                for _, action in self.action_handlers.scope(scope).items()
-            ]
+        functions = [
+            {
+                "name": action.name,
+                "description": action.description,
+                "parameters": action.json_schema(),
+            }
+            for _, action in self.action_handlers.scope(scope).items()
+        ]
 
-        response = None
-        # Action dispatch loop
-        while True:
+        if len(functions) == 0:
             self.logger.debug(
-                f"[OpenAIChatCompletion {self.model}] Calling openai with messages: {messages}. "
-                f"Available functions for the given scope {scope}: {[func['name'] for func in functions]}"
+                {
+                    "message": "Calling OpenAI api without functions",
+                    "input_messages": messages,
+                    "timestamp": time.time(),
+                }
             )
-
-            if functions is not None and len(functions) > 0:
-                api_response = openai.ChatCompletion.create(
-                    model=self.model,
-                    messages=messages,
-                    functions=functions,
-                    *args,
-                    **kwargs,
-                )
-
-            else:
-                api_response = openai.ChatCompletion.create(
-                    model=self.model, messages=messages, *args, **kwargs
-                )
-
+            api_response = openai.ChatCompletion.create(
+                model=self.model, messages=messages, *args, **kwargs
+            )
             self.token_usage_tracker.track_usage(api_response.usage)
 
             self.logger.debug(
-                f"[OpenAIChatCompletion {self.model}] Received response from OpenAI api : {api_response}"
+                {
+                    "message": "Received response from OpenAI api",
+                    "response": api_response,
+                    "model": self.model,
+                    "timestamp": time.time(),
+                }
             )
-
             message = api_response.choices[0]["message"]
+
             if "content" in message and message["content"]:
                 response = message["content"]
                 messages += [{"role": "assistant", "content": message["content"]}]
                 self.logger.debug(
-                    f"[OpenAIChatCompletion {self.model}] Processing message response: {message}"
+                    {
+                        "message": "Processing message response",
+                        "role": message["role"],
+                        "content": message["content"],
+                        "model": self.model,
+                        "timestamp": time.time(),
+                    }
+                )
+            else:
+                self.logger.error(
+                    {
+                        "message": "Unsupported response from OpenAI api",
+                        "timestamp": time.time(),
+                    },
+                    exc_info=True,
                 )
 
-            if "function_call" not in message:
-                break
-
-            messages += [
-                {
-                    "role": "assistant",
-                    "content": None,
-                    "function_call": message["function_call"].to_dict(),
-                }
-            ]
-
-            name = message["function_call"]["name"]
-            arguments = message["function_call"]["arguments"]
-
-            self.logger.debug(
-                f"[OpenAIChatCompletion {self.model}] Processing openai function call: {name} with arguments: {arguments}"
+                raise OpenAIChatCompletionException(
+                    "Unsupported response from OpenAI api"
+                )
+            return response
+        else:
+            return self.function_dispatch_loop(
+                messages, functions, *args, scope=scope, **kwargs
             )
 
-            if self.action_handlers.contains(name):
-                try:
-                    arguments = json.loads(message["function_call"]["arguments"])
-                except json.decoder.JSONDecodeError as e:
-                    self.logger.error(
-                        f"[OpenAIChatCompletion {self.model}] Parsing function call arguments from openai response :{e}"
+    def function_dispatch_loop(self, messages, functions, *args, scope=None, **kwargs):
+        response = None
+        while True:
+            self.logger.debug(
+                {
+                    "message": "Calling OpenAI api with functions",
+                    "input_messages": messages,
+                    "model": self.model,
+                    "scope": scope,
+                    "timestamp": time.time(),
+                    "functions": [func["name"] for func in functions],
+                }
+            )
+
+            api_response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=messages,
+                functions=functions,
+                *args,
+                **kwargs,
+            )
+
+            self.token_usage_tracker.track_usage(api_response.usage)
+
+            self.logger.debug(
+                {
+                    "message": "Received response from OpenAI api",
+                    "response": api_response,
+                    "timestamp": time.time(),
+                }
+            )
+
+            message = api_response.choices[0]["message"]
+
+            if "content" in message and message["content"]:
+                response = message["content"]
+                messages += [{"role": "assistant", "content": message["content"]}]
+                self.logger.debug(
+                    {
+                        "message": "Processing message response",
+                        "role": message["role"],
+                        "content": message["content"],
+                        "model": self.model,
+                        "timestamp": time.time(),
+                    }
+                )
+                break
+            elif "function_call" in message and message["function_call"]:
+                messages += [
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": message["function_call"].to_dict(),
+                    }
+                ]
+                name = message["function_call"]["name"]
+                arguments = message["function_call"]["arguments"]
+
+                self.logger.debug(
+                    {
+                        "message": "Processing function call",
+                        "model": self.model,
+                        "function_name": name,
+                        "function_arguments": arguments,
+                        "timestamp": time.time(),
+                    }
+                )
+
+                if self.action_handlers.contains(name):
+                    try:
+                        arguments = json.loads(message["function_call"]["arguments"])
+                    except json.decoder.JSONDecodeError as e:
+                        self.logger.error(
+                            {
+                                "message": "Parsing function call arguments from OpenAi response ",
+                                "arguments": message["function_call"]["arguments"],
+                                "timestamp": time.time(),
+                                "model": self.model,
+                            },
+                            exc_info=True,
+                        )
+                        raise OpenAIChatCompletionException(e) from e
+
+                    # Invoke action
+                    function_response = self.action_handlers[name](**arguments)
+                    messages += [
+                        {
+                            "role": "function",
+                            "name": name,
+                            "content": str(function_response),
+                        }
+                    ]
+
+                    self.logger.debug(
+                        {
+                            "message": "Action invoked and response received",
+                            "action_name": name,
+                            "action_arguments": arguments,
+                            "action_response": function_response,
+                            "timestamp": time.time(),
+                        }
                     )
-                    raise e
-
-                # Invoke action
-                function_response = self.action_handlers[name](**arguments)
-                messages += [
-                    {
-                        "role": "function",
-                        "name": name,
-                        "content": str(function_response),
-                    }
-                ]
-
-                # Todo: add color and better readability
-                self.logger.debug(
-                    f"[OpenAIChatCompletion {self.model}] Action: {name} invoked with arguments: {arguments}. \n\nResponse: {function_response}"
-                )
-
+                else:
+                    unavailable_function_msg = f"{name} is not a valid function name, use one of the following: {', '.join([func['name'] for func in functions])}"
+                    messages += [
+                        {
+                            "role": "user",
+                            "content": unavailable_function_msg,
+                        }
+                    ]
+                    self.logger.debug(
+                        {
+                            "message": "Unavailable action",
+                            "action_name": name,
+                            "action_arguments": arguments,
+                            "action_response": unavailable_function_msg,
+                            "timestamp": time.time(),
+                        }
+                    )
             else:
-                content = f"{name} is not a valid function name, use one of the following: {', '.join([func['name'] for func in functions])}"
-                messages += [
-                    {
-                        "role": "user",
-                        "content": content,
-                    }
-                ]
-                self.logger.debug(
-                    f"[OpenAIChatCompletion {self.model}] Unavailable action: {name} with arguments: {arguments}. \n\nResponse: {content}"
+                raise OpenAIChatCompletionException(
+                    "Unsupported response from OpenAI api"
                 )
-
         return response
