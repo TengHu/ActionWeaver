@@ -27,7 +27,7 @@ def action(name, scope="global", logger=None, models=[]):
     _logger = logger or logging.getLogger(__name__)
 
     def create_action(decorated_obj):
-        _logger.debug(f"Creating action with name: {name}, scope: {scope}")
+        _logger.debug({"message": f"Creating action with name: {name}, scope: {scope}"})
 
         action = Action(
             name=name, scope=scope, decorated_obj=decorated_obj, logger=_logger
@@ -98,11 +98,15 @@ class InstanceAction:
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         self.action.logger.debug(
-            f"[Action {self.action.name}, method {self.__name__}] Calling action: {self.action.name} with args: {args}"
+            {
+                "message": f"[Action {self.action.name}, method {self.__name__}] Calling action: {self.action.name} with args: {args}"
+            }
         )
         response = self.action.decorated_method(self.instance, *args, **kwargs)
         self.action.logger.debug(
-            f"[Action {self.action.name}, method {self.__name__}] Received response: {response}"
+            {
+                "message": f"[Action {self.action.name}, method {self.__name__}] Received response: {response}"
+            }
         )
         return response
 
