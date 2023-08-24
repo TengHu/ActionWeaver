@@ -20,9 +20,8 @@ pip install actionweaver
 
 ## LLM Agent with Action
 
-Developers can construct an agent using OpenAI's LLM, and further enhance it using ActionWeaver's Action decorators. For instance, to enable the `get_current_time` function to be invoked by an LLM, simply decorate it with the `GetCurrentTime` action as shown below:
-
-ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved. 
+Developers can construct an agent using OpenAI's LLM, and further enhance it using ActionWeaver's Action decorators. 
+For instance, to enable the `get_current_time` function below to be invoked by an LLM, simply decorate it with the `GetCurrentTime` action:
 
 ```python
 import logging
@@ -60,6 +59,8 @@ class AgentV0(ActionHandlerMixin):
 
 agent = AgentV0(logger)
 ```
+ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved. 
+
 You can invoke actions just like regular instance methods
 ```python
 agent.get_current_time() # Output: 'The current time is 20:34.'
@@ -69,7 +70,7 @@ You can also interact with the agent by asking questions, and the agent will dis
 agent("what time is it") # Output: 'The current time is 20:40:30.'
 ```
 
-##  Group actions into class, and inherit
+##  Grouping and Extending Actions Through Inheritance
 
 In this example, we wrap the [LangChain Google search](https://python.langchain.com/docs/integrations/tools/google_search) as a method, creating a powerful and extensible design pattern. By defining a new agent that inherits from the previous agent and LangChainTools, the new agent will inherit actions from both classes. This approach leverages object-oriented principles to enable rapid development and easy expansion of the agent's capabilities.
 
