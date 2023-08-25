@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import copy
-
 from actionweaver.action import Action, ActionHandlers
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
