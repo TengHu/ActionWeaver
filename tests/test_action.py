@@ -5,7 +5,7 @@ import unittest
 from pydantic import BaseModel, create_model
 
 from actionweaver.action import action
-from actionweaver.mixin import ActionHandlerMixin
+from actionweaver.mixins import ActionHandlerMixin
 
 
 class ActionTestCase(unittest.TestCase):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from actionweaver.utils import create_pydantic_model_from_func
+from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
 class ActionException(Exception):
