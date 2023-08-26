@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from actionweaver.action import Action, ActionHandlers
+from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 
