@@ -4,7 +4,7 @@ import time
 
 import openai
 
-from actionweaver.action import ActionHandlers
+from actionweaver.actions.action import ActionHandlers
 from actionweaver.llms.openai.tokens import TokenUsageTracker
 
 
