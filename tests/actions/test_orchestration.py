@@ -36,7 +36,7 @@ class OrchestrationTestCase(unittest.TestCase):
         instance_action_handler = action_handler.bind(None).build_orchestration_dict()
 
         self.assertEqual(
-            instance_action_handler.edge_dict,
+            instance_action_handler.orch_dict,
             {
                 _ActionHandlerLLMInvoke(scope="global"): _ActionHandlerSelectOne(
                     [
@@ -79,7 +79,7 @@ class OrchestrationTestCase(unittest.TestCase):
         instance_action_handler = action_handler.bind(None).build_orchestration_dict()
 
         self.assertEqual(
-            instance_action_handler.edge_dict,
+            instance_action_handler.orch_dict,
             {
                 _ActionHandlerLLMInvoke(scope="global"): _ActionHandlerSelectOne(
                     ["action1", "action2", "action3"]
@@ -115,7 +115,7 @@ class OrchestrationTestCase(unittest.TestCase):
         instance_action_handler = action_handler.bind(None).build_orchestration_dict()
 
         self.assertEqual(
-            instance_action_handler.edge_dict,
+            instance_action_handler.orch_dict,
             {
                 _ActionHandlerLLMInvoke(scope="global"): ["action1"],
                 "action1": _ActionHandlerSelectOne(["action3", "action5"]),

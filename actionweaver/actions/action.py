@@ -162,7 +162,7 @@ class InstanceActionHandlers:
     def __init__(self, instance, action_handlers: ActionHandlers, *args, **kwargs):
         self.action_handlers = action_handlers
         self.instance = instance
-        self.edge_dict = {}
+        self.orch_dict = {}
 
     def __getitem__(self, key) -> InstanceAction:
         val = self.action_handlers.name_to_action[key]
@@ -181,7 +181,7 @@ class InstanceActionHandlers:
         """
         Parse orchestration expressions from all actions.
         """
-        edge_dict = {}
+        orch_dict = {}
 
         def get_first_action(l):
             """
@@ -215,7 +215,7 @@ class InstanceActionHandlers:
 
         def parse(l):
             """
-            Parse list expression into edge_dict.
+            Parse list expression into orch_dict.
             """
             if isinstance(l, SelectOne):
                 curr = get_last_action(l[0])
@@ -226,20 +226,20 @@ class InstanceActionHandlers:
                     next_actions.append(get_first_action(n))
                     parse(n)
 
-                if curr in edge_dict:
+                if curr in orch_dict:
                     raise ActionOrchestrationParseError(f"Inconsistency caused by {l}")
-                edge_dict[curr] = _ActionHandlerSelectOne(next_actions)
+                orch_dict[curr] = _ActionHandlerSelectOne(next_actions)
             elif isinstance(l, RequireNext):
                 parse(l[0])
                 prev, curr = get_last_action(l[0]), None
                 for n in range(1, len(l)):
                     curr = get_first_action(l[n])
 
-                    if prev in edge_dict:
+                    if prev in orch_dict:
                         raise ActionOrchestrationParseError(
                             f"Inconsistency caused by {l}"
                         )
-                    edge_dict[prev] = _ActionHandlerRequired(get_first_action(curr))
+                    orch_dict[prev] = _ActionHandlerRequired(get_first_action(curr))
                     parse(l[n])
 
                     prev = curr
@@ -259,19 +259,19 @@ class InstanceActionHandlers:
                 parse(action.orchestration_expr)
 
             # parse scope
-            if _ActionHandlerLLMInvoke(action.scope) not in edge_dict:
-                edge_dict[
+            if _ActionHandlerLLMInvoke(action.scope) not in orch_dict:
+                orch_dict[
                     _ActionHandlerLLMInvoke(action.scope)
                 ] = _ActionHandlerSelectOne([])
             else:
                 if not isinstance(
-                    edge_dict[_ActionHandlerLLMInvoke(action.scope)],
+                    orch_dict[_ActionHandlerLLMInvoke(action.scope)],
                     _ActionHandlerSelectOne,
                 ):
                     raise ActionOrchestrationParseError(
                         f"The scope {action.scope} of Action {action.name} causes inconsistency in orchestration."
                     )
-            edge_dict[_ActionHandlerLLMInvoke(action.scope)].append(action.name)
+            orch_dict[_ActionHandlerLLMInvoke(action.scope)].append(action.name)
 
-        self.edge_dict = edge_dict
+        self.orch_dict = orch_dict
         return self

@@ -35,6 +35,9 @@ class ActionHandlerMixin:
             return new_init
 
         def check_orchestration_expr_validity(expr):
+            if expr is None:
+                return
+
             if isinstance(expr, str):
                 if expr not in cls._action_handlers.name_to_action:
                     raise ActionHandlerMixinException(
