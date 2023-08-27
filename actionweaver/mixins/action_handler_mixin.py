@@ -4,12 +4,19 @@ from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 
+class ActionHandlerMixinException(Exception):
+    pass
+
+
 class ActionHandlerMixin:
     _action_handlers = ActionHandlers()
 
     def __post_init__(self):
         # bind action handlers to self
         self.instance_action_handlers = self._action_handlers.bind(self)
+
+        # build action orchestration dict
+        self.instance_action_handlers.build_orchestration_dict()
 
         for _, attr_value in tuple(self.__dict__.items()):
             if isinstance(attr_value, OpenAIChatCompletion):
@@ -27,6 +34,17 @@ class ActionHandlerMixin:
 
             return new_init
 
+        def check_orchestration_expr_validity(expr):
+            if isinstance(expr, str):
+                if expr not in cls._action_handlers.name_to_action:
+                    raise ActionHandlerMixinException(
+                        f"Action {expr} not found in {cls.__name__}."
+                    )
+                return
+
+            for element in expr:
+                check_orchestration_expr_validity(element)
+
         # Add __post_init__ method to the subclass.
         cls.__init__ = init_decorator(cls.__init__)
 
@@ -39,6 +57,11 @@ class ActionHandlerMixin:
             ]
         )
 
+        # add action to action handlers.
         for _, attr_value in tuple(cls.__dict__.items()):
             if isinstance(attr_value, Action):
                 cls._action_handlers.name_to_action[attr_value.name] = attr_value
+
+        # check if all action orchestration expressions are valid
+        for _, action in cls._action_handlers.name_to_action.items():
+            check_orchestration_expr_validity(action.orchestration_expr)

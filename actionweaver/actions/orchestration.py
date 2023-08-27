@@ -1,4 +1,9 @@
 from collections import UserList
+from dataclasses import dataclass
+
+#################################################################################################
+# The following classes are used within action decorators
+#################################################################################################
 
 
 class SelectOne(UserList):
@@ -9,7 +14,13 @@ class SelectOne(UserList):
     one action from action2 and action3, or not action (default) .
     """
 
-    pass
+    def __init__(self, data):
+        if len(data) <= 1:
+            raise ValueError("SelectOne must have more than 1 element")
+        super().__init__(data)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.data == other.data
 
 
 class RequireNext(UserList):
@@ -20,4 +31,32 @@ class RequireNext(UserList):
     with action2 and subsequently action3.
     """
 
+    def __init__(self, data):
+        if len(data) <= 1:
+            raise ValueError("RequireNext must have more than 1 element")
+        super().__init__(data)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.data == other.data
+
+
+#################################################################################################
+# The following classes are used within action handlers class
+#################################################################################################
+
+
+@dataclass
+class _ActionHandlerLLMInvoke:
+    scope: str = "global"
+
+    def __hash__(self):
+        return hash(f"_ActionHandlerLLMInvoke[scope={self.scope}]")
+
+
+@dataclass
+class _ActionHandlerRequired:
+    action: str
+
+
+class _ActionHandlerSelectOne(UserList):
     pass
