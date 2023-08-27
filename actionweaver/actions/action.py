@@ -3,6 +3,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
+from actionweaver.actions.orchestration import (
+    RequireNext,
+    SelectOne,
+    _ActionHandlerLLMInvoke,
+    _ActionHandlerRequired,
+    _ActionHandlerSelectOne,
+)
 from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
@@ -10,7 +17,7 @@ class ActionException(Exception):
     pass
 
 
-def action(name, scope="global", logger=None, models=[]):
+def action(name, scope="global", logger=None, orchestration_expr=None, models=[]):
     """
     Decorator function to create an Action object.
 
@@ -30,7 +37,11 @@ def action(name, scope="global", logger=None, models=[]):
         _logger.debug({"message": f"Creating action with name: {name}, scope: {scope}"})
 
         action = Action(
-            name=name, scope=scope, decorated_obj=decorated_obj, logger=_logger
+            name=name,
+            scope=scope,
+            decorated_obj=decorated_obj,
+            orchestration_expr=orchestration_expr,
+            logger=_logger,
         ).build_pydantic_model_cls(models=models)
 
         return action
@@ -42,13 +53,15 @@ class Action:
     def __init__(
         self,
         name,
-        scope,
         decorated_obj,
-        logger,
+        scope=None,
+        orchestration_expr=None,
+        logger=None,
     ):
         self.name = name
-        self.scope = scope
+        self.scope = scope or "global"
         self.logger = logger
+        self.orchestration_expr = orchestration_expr
 
         if decorated_obj.__doc__ is None:
             raise ActionException(
@@ -97,17 +110,19 @@ class InstanceAction:
         self.instance = instance
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        self.action.logger.debug(
-            {
-                "message": f"[Action {self.action.name}, method {self.__name__}] Calling action: {self.action.name} with args: {args}"
-            }
-        )
+        if self.action.logger:
+            self.action.logger.debug(
+                {
+                    "message": f"[Action {self.action.name}, method {self.__name__}] Calling action: {self.action.name} with args: {args}"
+                }
+            )
         response = self.action.decorated_method(self.instance, *args, **kwargs)
-        self.action.logger.debug(
-            {
-                "message": f"[Action {self.action.name}, method {self.__name__}] Received response: {response}"
-            }
-        )
+        if self.action.logger:
+            self.action.logger.debug(
+                {
+                    "message": f"[Action {self.action.name}, method {self.__name__}] Received response: {response}"
+                }
+            )
         return response
 
 
@@ -139,10 +154,15 @@ class ActionHandlers:
         return merged
 
 
+class ActionOrchestrationParseError(Exception):
+    pass
+
+
 class InstanceActionHandlers:
     def __init__(self, instance, action_handlers: ActionHandlers, *args, **kwargs):
         self.action_handlers = action_handlers
         self.instance = instance
+        self.orch_dict = {}
 
     def __getitem__(self, key) -> InstanceAction:
         val = self.action_handlers.name_to_action[key]
@@ -156,3 +176,102 @@ class InstanceActionHandlers:
 
     def contains(self, name) -> bool:
         return self.action_handlers.contains(name)
+
+    def build_orchestration_dict(self):
+        """
+        Parse orchestration expressions from all actions.
+        """
+        orch_dict = {}
+
+        def get_first_action(l):
+            """
+            Get first action name from list expression.
+            """
+            if isinstance(l, (SelectOne, RequireNext)):
+                return get_first_action(l[0])
+            elif isinstance(l, str):
+                return l
+            else:
+                raise ActionOrchestrationParseError(
+                    f"Invalid object in orchestration: {l}."
+                )
+
+        def get_last_action(l):
+            """
+            Get last action name from list expression.
+            """
+            if isinstance(l, SelectOne):
+                raise ActionOrchestrationParseError(
+                    f"Can't decide last action of SelectOne: {l}."
+                )
+            elif isinstance(l, RequireNext):
+                return get_last_action(l[-1])
+            elif isinstance(l, str):
+                return l
+            else:
+                raise ActionOrchestrationParseError(
+                    f"Invalid object in orchestration: {l}."
+                )
+
+        def parse(l):
+            """
+            Parse list expression into orch_dict.
+            """
+            if isinstance(l, SelectOne):
+                curr = get_last_action(l[0])
+                parse(l[0])
+
+                next_actions = []
+                for n in list(l)[1:]:
+                    next_actions.append(get_first_action(n))
+                    parse(n)
+
+                if curr in orch_dict:
+                    raise ActionOrchestrationParseError(f"Inconsistency caused by {l}")
+                orch_dict[curr] = _ActionHandlerSelectOne(next_actions)
+            elif isinstance(l, RequireNext):
+                parse(l[0])
+                prev, curr = get_last_action(l[0]), None
+                for n in range(1, len(l)):
+                    curr = get_first_action(l[n])
+
+                    if prev in orch_dict:
+                        raise ActionOrchestrationParseError(
+                            f"Inconsistency caused by {l}"
+                        )
+                    orch_dict[prev] = _ActionHandlerRequired(get_first_action(curr))
+                    parse(l[n])
+
+                    prev = curr
+            elif isinstance(l, str):
+                return
+            else:
+                raise ActionOrchestrationParseError(f"Invalid orchestration expr: {l}.")
+
+        for _, action in self.action_handlers.name_to_action.items():
+            if action.orchestration_expr:
+                if action.orchestration_expr[0] != action.name:
+                    raise ActionOrchestrationParseError(
+                        f"First element of orchestration expression {action.orchestration_expr} must be the action name {action.name}."
+                    )
+
+                # parse orchestration list expressions
+                parse(action.orchestration_expr)
+
+            # parse scope
+            if _ActionHandlerLLMInvoke(action.scope) not in orch_dict:
+                orch_dict[
+                    _ActionHandlerLLMInvoke(action.scope)
+                ] = _ActionHandlerSelectOne([])
+            else:
+                if not isinstance(
+                    orch_dict[_ActionHandlerLLMInvoke(action.scope)],
+                    _ActionHandlerSelectOne,
+                ):
+                    raise ActionOrchestrationParseError(
+                        f"The scope {action.scope} of Action {action.name} causes inconsistency in orchestration."
+                    )
+            orch_dict[_ActionHandlerLLMInvoke(action.scope)].append(action.name)
+
+        self.orch_dict = orch_dict
+        return self

@@ -5,7 +5,9 @@ import unittest
 from pydantic import BaseModel, create_model
 
 from actionweaver.actions import action
+from actionweaver.actions.orchestration import RequireNext, SelectOne
 from actionweaver.mixins import ActionHandlerMixin
+from actionweaver.mixins.action_handler_mixin import ActionHandlerMixinException
 
 
 class ActionTestCase(unittest.TestCase):
@@ -35,6 +37,26 @@ class ActionTestCase(unittest.TestCase):
         self.assertEqual(foo2.sum_bar(1, 2), 3)
         self.assertEqual(foo2.minus_func(1, 2), -1)
         self.assertEqual(len(foo2._action_handlers), 2)
+
+    def test_action_handler_mixin_with_invalid_orchestration(self):
+        try:
+
+            class Foo(ActionHandlerMixin):
+                @action(
+                    "Sum",
+                    orchestration_expr=SelectOne(
+                        ["Sum", RequireNext(["Sum", SelectOne(["Sum", "action3"])])]
+                    ),
+                )
+                def mock_method(self, bar1: int, bar2: int):
+                    """mock method"""
+                    pass
+
+        except ActionHandlerMixinException as e:
+            self.assertEqual(
+                str(e),
+                "Action action3 not found in Foo.",
+            )
 
 
 if __name__ == "__main__":
