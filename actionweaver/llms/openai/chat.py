@@ -171,6 +171,7 @@ class OpenAIChatCompletion:
                 "scope": scope,
                 "input_messages": messages,
                 "timestamp": time.time(),
+                "call_id": call_id,
             }
         )
 

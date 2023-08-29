@@ -2,18 +2,20 @@ from __future__ import annotations
 
 import unittest
 
-from pydantic import BaseModel, create_model
-
 from actionweaver.actions import action
 from actionweaver.actions.action import ActionException
 from actionweaver.actions.orchestration import RequireNext, SelectOne
+from actionweaver.llms.openai.chat import OpenAIChatCompletion
 from actionweaver.mixins import ActionHandlerMixin
-from actionweaver.mixins.action_handler_mixin import ActionHandlerMixinException
 
 
 class ActionTestCase(unittest.TestCase):
     def test_action_handler_mixin(self):
         class Foo1(ActionHandlerMixin):
+            def __init__(self) -> None:
+                super().__init__()
+                self.llm = OpenAIChatCompletion(model="model")
+
             @action("Sum")
             def sum_bar(self, bar1: int, bar2: int):
                 """

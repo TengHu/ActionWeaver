@@ -5,9 +5,13 @@
 
 ActionWeaver empowers developers to build robust and flexible tools using agents that leverage [OpenAI's functions](https://openai.com/blog/function-calling-and-other-api-updates). With just a simple decorator, developers can transform ANY vanilla Python code into a powerful addition to their LLM agent. ActionWeaver unlocks a new type of programs by seamlessly integrating traditional programming with LLM powerful capabilities.
 
-Other Features:
-- [x] ActionWeaver is designed with a straightforward and adaptable syntax that promotes ease of use.
+Features:
+- [x] Easily integrate ANY Python code into your agent's toolbox with just a single line.
+- [x] Leverage the features provided by other ecosystems like LangChain and incorporate them into your agent.
+- [x] Build complex orchestration of OpenAI functions and perform intricate hierarchies and chains of OpenAI function callings.
 - [x] ActionWeaver adopts structured logging, making the developer experience more efficient.
+
+
 
 [Demo notebook](notebooks/tutorial.ipynb)
 
@@ -43,9 +47,9 @@ class AgentV0(ActionHandlerMixin):
     
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.create(messages=self.messages, scope='global')
+        return self.llm.create(messages=self.messages)
         
-    @action(name="GetCurrentTime", scope="global")
+    @action(name="GetCurrentTime")
     def get_current_time(self) -> str:
         """
         Use this for getting the current time in the specified time zone.
@@ -79,7 +83,7 @@ In the example below, through inheritance, the new agent can utilize the Google 
 
 ```python
 class LangChainTools(ActionHandlerMixin):
-    @action(name="GoogleSearch", scope="global")
+    @action(name="GoogleSearch")
     def google_search(self, query: str) -> str:
         """
         Perform a Google search using the provided query. 
@@ -106,16 +110,33 @@ Output: Here are some events that happened or are scheduled for today (August 23
 """
 ```
 
-## Hierarchy of Actions
+## Orchestration of Actions
 
-Instead of overwhelming OpenAI with an extensive list of functions, we can design a hierarchy of actions. In this example, we introduce a new class that defines two specific actions, reflecting a hierarchical approach:
+ActionWeaver enables the design of hierarchies and chains of actions with following features:
 
-- FileHandler with `global` scope: This action serves as the entry point for all file-manipulating tasks. Inside this action, the LLM is invoked with a file scope, providing a gateway to all related file operations.
-- ListFiles with `file` scope: This is an example of a specific action within the `file` scope that lists all files in a given path. When the LLM is invoked with the file scope, this action is made available as an OpenAI function.
+**Scope**: Each action is confined to its own visibility scope.
+
+**Orchestration expression**:
+
+1. **SelectOne(['a1', 'a2', 'a3])**: Prompting the llm to choose either 'a2' or 'a3' after 'a1' has been invoked, or to take no action.
+   
+2. **RequireNext(['a1', 'a2', 'a3])**: Mandating the language model to execute 'a2' immediately following 'a1', followed by 'a3'.
+
+
+### Example: Hierarchy of Actions
+
+Instead of overwhelming OpenAI with an extensive list of functions, we can design a hierarchy of actions. In this example, we introduce a new class that defines three specific actions, reflecting a hierarchical approach:
+
+- FileHandler with `default` scope: This action serves as the entry point for all file-manipulating actions, with orchestration logic `SelectOne(["FileHandler", "ListFiles", "ReadFile"])`.
+
+- ListFiles with `file` scope.
+- ReadFile with `file` scope.
+
+
 
 ```python
-class FileUtility(ActionHandlerMixin):
-    @action(name="FileHandler", scope="global")
+class FileUtility(AgentV0):
+    @action(name="FileHandler", orch_expr = SelectOne(["FileHandler", "ListFiles", "ReadFile"]))
     def handle_file(self, instruction: str) -> str:
         """
         Handles user instructions related to file operations. Put every context in the instruction only!
@@ -126,7 +147,7 @@ class FileUtility(ActionHandlerMixin):
         Returns:
             str: The response to the user's question.
         """
-        return self.llm.create(messages=[{'role': 'user', 'content': instruction}], scope='file')
+        return instruction
         
 
     @action(name="ListFiles", scope="file")
@@ -146,7 +167,83 @@ class FileUtility(ActionHandlerMixin):
                 file_list.append(os.path.join(root, file))
             break
         return file_list
+
+    @action(name="ReadFile", scope="file")
+    def read_from_file(self, file_path: str) -> str:
+        """
+        Reads the content of a file and returns it as a string.
+    
+        :param file_path: The path to the file that needs to be read.
+        :return: A string containing the content of the file.
+        """
+        logger.info(f"read_from_file: {file_path}")
+        
+        with open(file_path, 'r') as file:
+            content = file.read()
+        return f"The file content: \n{content}"
+
+agent = FileUtility(logger)
 ```
+
+<img src="docs/figures/hierarchy.png">
+
+
+### Example: Chains of Actions
+
+We can also force LLM to ask for current time after read a file by setting orchestration in `ReadFile`.
+
+```python
+class FileUtility(AgentV0):
+    @action(name="FileHandler", orch_expr = SelectOne(["FileHandler", "ListFiles", "ReadFile"]))
+    def handle_file(self, instruction: str) -> str:
+        """
+        Handles user instructions related to file operations. Put every context in the instruction only!
+    
+        Args:
+            instruction (str): The user's instruction about file handling.
+    
+        Returns:
+            str: The response to the user's question.
+        """
+        return instruction
+        
+
+    @action(name="ListFiles", scope="file")
+    def list_all_files_in_repo(self, repo_path: str ='.') -> List:
+        """
+        Lists all the files in the given repository.
+    
+        :param repo_path: Path to the repository. Defaults to the current directory.
+        :return: List of file paths.
+        """
+
+        logger.info(f"list_all_files_in_repo: {repo_path}")
+        
+        file_list = []
+        for root, _, files in os.walk(repo_path):
+            for file in files:
+                file_list.append(os.path.join(root, file))
+            break
+        return file_list
+
+    @action(name="ReadFile", scope="file", orch_expr = RequireNext(["ReadFile", "GetCurrentTime"]))
+    def read_from_file(self, file_path: str) -> str:
+        """
+        Reads the content of a file and returns it as a string.
+    
+        :param file_path: The path to the file that needs to be read.
+        :return: A string containing the content of the file.
+        """
+        logger.info(f"read_from_file: {file_path}")
+        
+        with open(file_path, 'r') as file:
+            content = file.read()
+        return f"The file content: \n{content}"
+
+agent = FileUtility(logger)
+```
+
+<img src="docs/figures/chains.png">
 
 ## Contributing
 Contributions in the form of bug fixes, new features, documentation improvements, and pull requests are VERY welcomed.
