@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import unittest
 
-from pydantic import BaseModel, create_model
-
 from actionweaver.actions import Action, ActionHandlers, action
 from actionweaver.actions.orchestration import (
     RequireNext,
@@ -12,6 +10,7 @@ from actionweaver.actions.orchestration import (
     _ActionHandlerRequired,
     _ActionHandlerSelectOne,
 )
+from actionweaver.utils import DEFAULT_ACTION_SCOPE
 
 
 class OrchestrationTestCase(unittest.TestCase):
@@ -22,9 +21,9 @@ class OrchestrationTestCase(unittest.TestCase):
     def test_orchestration1(self):
         # Todo: use kw-only arguments for Action
         actions = [
-            Action("action1", self.mock_method, "global"),
-            Action("action2", self.mock_method, "global"),
-            Action("action3", self.mock_method, "global"),
+            Action("action1", self.mock_method, DEFAULT_ACTION_SCOPE),
+            Action("action2", self.mock_method, DEFAULT_ACTION_SCOPE),
+            Action("action3", self.mock_method, DEFAULT_ACTION_SCOPE),
             Action("action4", self.mock_method, "local1"),
             Action("action5", self.mock_method, "local2"),
         ]
@@ -38,7 +37,9 @@ class OrchestrationTestCase(unittest.TestCase):
         self.assertEqual(
             instance_action_handler.orch_dict,
             {
-                _ActionHandlerLLMInvoke(scope="global"): _ActionHandlerSelectOne(
+                _ActionHandlerLLMInvoke(
+                    scope=DEFAULT_ACTION_SCOPE
+                ): _ActionHandlerSelectOne(
                     [
                         "action1",
                         "action2",
@@ -59,7 +60,7 @@ class OrchestrationTestCase(unittest.TestCase):
             Action(
                 "action1",
                 self.mock_method,
-                orchestration_expr=SelectOne(["action1", "action2"]),
+                orch_expr=SelectOne(["action1", "action2"]),
             ),
             Action(
                 "action2",
@@ -68,7 +69,7 @@ class OrchestrationTestCase(unittest.TestCase):
             Action(
                 "action3",
                 self.mock_method,
-                orchestration_expr=SelectOne(["action3", "action1", "action2"]),
+                orch_expr=SelectOne(["action3", "action1", "action2"]),
             ),
         ]
 
@@ -81,9 +82,9 @@ class OrchestrationTestCase(unittest.TestCase):
         self.assertEqual(
             instance_action_handler.orch_dict,
             {
-                _ActionHandlerLLMInvoke(scope="global"): _ActionHandlerSelectOne(
-                    ["action1", "action2", "action3"]
-                ),
+                _ActionHandlerLLMInvoke(
+                    scope=DEFAULT_ACTION_SCOPE
+                ): _ActionHandlerSelectOne(["action1", "action2", "action3"]),
                 "action1": _ActionHandlerSelectOne(["action2"]),
                 "action3": _ActionHandlerSelectOne(["action1", "action2"]),
             },
@@ -94,7 +95,7 @@ class OrchestrationTestCase(unittest.TestCase):
             Action(
                 "action1",
                 self.mock_method,
-                orchestration_expr=SelectOne(
+                orch_expr=SelectOne(
                     [
                         "action1",
                         SelectOne(
@@ -117,7 +118,7 @@ class OrchestrationTestCase(unittest.TestCase):
         self.assertEqual(
             instance_action_handler.orch_dict,
             {
-                _ActionHandlerLLMInvoke(scope="global"): ["action1"],
+                _ActionHandlerLLMInvoke(scope=DEFAULT_ACTION_SCOPE): ["action1"],
                 "action1": _ActionHandlerSelectOne(["action3", "action5"]),
                 "action3": _ActionHandlerSelectOne(["action9", "action4"]),
                 "action5": _ActionHandlerRequired(action="action6"),

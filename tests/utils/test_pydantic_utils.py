@@ -10,11 +10,11 @@ from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
 class UtilsTestCase(unittest.TestCase):
-    def create_pydantic_model_from_func(self):
+    def test_create_pydantic_model_from_func(self):
         def foo(bar1: int, bar2: int, bar3: str = "qux"):
             pass
 
-        Foo = create_pydantic_model_from_signature(foo, "Foo")
+        Foo = create_pydantic_model_from_func(foo, "Foo")
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -33,7 +33,7 @@ class UtilsTestCase(unittest.TestCase):
         def foo(self, bar1: int, bar2: int, bar3: str = "qux"):
             pass
 
-        Foo = create_pydantic_model_from_signature(foo, "Foo")
+        Foo = create_pydantic_model_from_func(foo, "Foo")
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -48,7 +48,7 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def create_pydantic_model_from_func_with_pydantic_argument(self):
+    def test_create_pydantic_model_from_func_with_pydantic_argument(self):
         class Person(BaseModel):
             first_name: str
             last_name: str
@@ -132,13 +132,13 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def create_pydantic_model_from_func_with_decorators(self):
+    def test_create_pydantic_model_from_func_with_decorators(self):
         @cache
         def foo1(bar1: int, bar2: int, bar3: str = "qux"):
             """foo"""
             pass
 
-        Foo = create_pydantic_model_from_signature(foo1, "Foo")
+        Foo = create_pydantic_model_from_func(foo1, "Foo")
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -158,7 +158,7 @@ class UtilsTestCase(unittest.TestCase):
             """foo"""
             pass
 
-        Foo = create_pydantic_model_from_signature(foo2, "Foo")
+        Foo = create_pydantic_model_from_func(foo2, "Foo")
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -190,7 +190,7 @@ class UtilsTestCase(unittest.TestCase):
             """foo"""
             pass
 
-        Foo = create_pydantic_model_from_signature(foo3, "Foo")
+        Foo = create_pydantic_model_from_func(foo3, "Foo")
         self.assertEqual(
             Foo.model_json_schema(),
             {

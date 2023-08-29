@@ -1,1 +1,2 @@
+from .action_scope import DEFAULT_ACTION_SCOPE
 from .pydantic_utils import create_pydantic_model_from_func

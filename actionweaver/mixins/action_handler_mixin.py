@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tkinter import N
+
 from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
@@ -67,4 +69,17 @@ class ActionHandlerMixin:
 
         # check if all action orchestration expressions are valid
         for _, action in cls._action_handlers.name_to_action.items():
-            check_orchestration_expr_validity(action.orchestration_expr)
+            if action.orch_expr:
+                if len(action.orch_expr) < 2:
+                    raise ActionHandlerMixinException(
+                        f"Action {action.name} must has at least two elements in its orchestration expression. The first element is the action itself. For example, SelectOne([action1, action2])."
+                    )
+                cls._action_handlers.check_orchestration_expr_validity(action.orch_expr)
+
+    def action_to_pyvis_network(self):
+        if self.instance_action_handlers is None:
+            raise ActionHandlerMixinException(
+                "Action handlers not initialized. Please call __post_init__ first."
+            )
+
+        return self.instance_action_handlers.to_pyvis_network()

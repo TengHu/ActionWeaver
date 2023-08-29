@@ -5,6 +5,7 @@ import unittest
 from pydantic import BaseModel, create_model
 
 from actionweaver.actions import action
+from actionweaver.actions.action import ActionException
 from actionweaver.actions.orchestration import RequireNext, SelectOne
 from actionweaver.mixins import ActionHandlerMixin
 from actionweaver.mixins.action_handler_mixin import ActionHandlerMixinException
@@ -44,7 +45,7 @@ class ActionTestCase(unittest.TestCase):
             class Foo(ActionHandlerMixin):
                 @action(
                     "Sum",
-                    orchestration_expr=SelectOne(
+                    orch_expr=SelectOne(
                         ["Sum", RequireNext(["Sum", SelectOne(["Sum", "action3"])])]
                     ),
                 )
@@ -52,10 +53,10 @@ class ActionTestCase(unittest.TestCase):
                     """mock method"""
                     pass
 
-        except ActionHandlerMixinException as e:
+        except ActionException as e:
             self.assertEqual(
                 str(e),
-                "Action action3 not found in Foo.",
+                "Action action3 not found.",
             )
 
 
