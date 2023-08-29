@@ -43,7 +43,7 @@ class OpenAIChatCompletion:
         default_expr,
         functions,
     ):
-        """Invoke the API with function provided, update the messages, returns functions for the next OpenAI API call."""
+        """Invoke the function, update the messages, returns functions argument for the next OpenAI API call."""
         messages += [
             {
                 "role": "assistant",
