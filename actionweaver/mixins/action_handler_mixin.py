@@ -3,6 +3,7 @@ from __future__ import annotations
 from tkinter import N
 
 from actionweaver.actions.action import Action, ActionHandlers
+from actionweaver.llms.openai import chat
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 
@@ -20,17 +21,36 @@ class ActionHandlerMixin:
         # build action orchestration dict
         self.instance_action_handlers.build_orchestration_dict()
 
+        chat_completion_found = False
         for _, attr_value in tuple(self.__dict__.items()):
             if isinstance(attr_value, OpenAIChatCompletion):
+                if chat_completion_found:
+                    raise ActionHandlerMixinException(
+                        "Only one OpenAIChatCompletion instance is allowed in a class."
+                    )
+
                 # bind instance action handlers to llm
                 attr_value._bind_action_handlers(self.instance_action_handlers)
+                chat_completion_found = True
+
+        if not chat_completion_found:
+            raise ActionHandlerMixinException(
+                "An OpenAIChatCompletion instance is required in a class."
+            )
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
         def init_decorator(original_init):
             def new_init(self, *args, **kwargs):
-                original_init(self, *args, **kwargs)
+                try:
+                    original_init(self, *args, **kwargs)
+                except Exception as e:
+                    error_message = (
+                        f"Error occurred while initializing the object: {e}."
+                    )
+                    raise ActionHandlerMixinException(error_message) from e
+
                 if type(self) == cls:
                     self.__post_init__()
 
@@ -72,7 +92,7 @@ class ActionHandlerMixin:
             if action.orch_expr:
                 if len(action.orch_expr) < 2:
                     raise ActionHandlerMixinException(
-                        f"Action {action.name} must has at least two elements in its orchestration expression. The first element is the action itself. For example, SelectOne([action1, action2])."
+                        f"Action {action.name} must has at least two elements in its orchestration expression. The first element is the action itself. For example, SelectOne([{action.name}, action1, action2])."
                     )
                 cls._action_handlers.check_orchestration_expr_validity(action.orch_expr)
 
