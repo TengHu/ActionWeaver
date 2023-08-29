@@ -1,6 +1,8 @@
 from collections import UserList
 from dataclasses import dataclass
 
+from actionweaver.utils import DEFAULT_ACTION_SCOPE
+
 #################################################################################################
 # The following classes are used within action decorators
 #################################################################################################
@@ -14,11 +16,6 @@ class SelectOne(UserList):
     one action from action2 and action3, or not action (default) .
     """
 
-    def __init__(self, data):
-        if len(data) <= 1:
-            raise ValueError("SelectOne must have more than 1 element")
-        super().__init__(data)
-
     def __eq__(self, other):
         return type(self) == type(other) and self.data == other.data
 
@@ -31,23 +28,18 @@ class RequireNext(UserList):
     with action2 and subsequently action3.
     """
 
-    def __init__(self, data):
-        if len(data) <= 1:
-            raise ValueError("RequireNext must have more than 1 element")
-        super().__init__(data)
-
     def __eq__(self, other):
         return type(self) == type(other) and self.data == other.data
 
 
 #################################################################################################
-# The following classes are used within action handlers class
+# The following classes are used within action handlers class, users should not use them directly
 #################################################################################################
 
 
 @dataclass
 class _ActionHandlerLLMInvoke:
-    scope: str = "global"
+    scope: str = DEFAULT_ACTION_SCOPE
 
     def __hash__(self):
         return hash(f"_ActionHandlerLLMInvoke[scope={self.scope}]")
