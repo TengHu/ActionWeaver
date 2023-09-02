@@ -2,6 +2,20 @@ from actionweaver import ActionHandlerMixin, action
 
 
 class LangChainTools(ActionHandlerMixin):
+    def verify_lib_installed(self):
+        import importlib
+
+        library_name = "langchain"
+
+        try:
+            importlib.import_module(library_name)
+        except ImportError as e:
+            error_msg = (
+                f"The '{library_name}' library is not installed. You can install it using:"
+                f"pip install {library_name}"
+            )
+            raise Exception(error_msg) from e
+
     @action(name="GoogleSearch")
     def google_search(self, query: str) -> str:
         """
@@ -13,6 +27,8 @@ class LangChainTools(ActionHandlerMixin):
         :param query: The search query to be used for the Google search.
         :return: The search results as a string.
         """
+        self.verify_lib_installed()
+
         from langchain.utilities import GoogleSearchAPIWrapper
 
         search = GoogleSearchAPIWrapper()
