@@ -52,3 +52,9 @@ class _ActionHandlerRequired:
 
 class _ActionHandlerSelectOne(UserList):
     pass
+
+
+class _ActionDefault:
+    """This class represents the default action"""
+
+    pass

@@ -1,4 +1,5 @@
 from actionweaver.actions.orchestration import (
+    _ActionDefault,
     _ActionHandlerLLMInvoke,
     _ActionHandlerRequired,
     _ActionHandlerSelectOne,
@@ -17,7 +18,9 @@ class Functions:
     @classmethod
     def from_expr(cls, expr, instance_action_handlers):
         action_handlers = instance_action_handlers.action_handlers
-        if isinstance(expr, _ActionHandlerRequired):
+        if isinstance(expr, _ActionDefault):
+            return cls()
+        elif isinstance(expr, _ActionHandlerRequired):
             return cls(
                 function_call={"name": expr.action},
                 functions=[
