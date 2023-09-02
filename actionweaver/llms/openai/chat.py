@@ -4,6 +4,7 @@ import time
 import uuid
 
 import openai
+from openai.openai_object import OpenAIObject
 
 from actionweaver.actions.action import (
     ActionHandlers,
@@ -14,6 +15,11 @@ from actionweaver.actions.orchestration import _ActionHandlerLLMInvoke
 from actionweaver.llms.openai.functions import Functions
 from actionweaver.llms.openai.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
+from actionweaver.utils.stream import (
+    get_first_element_and_iterator,
+    is_generator,
+    merge_dicts,
+)
 
 
 class OpenAIChatCompletionException(Exception):
@@ -44,11 +50,15 @@ class OpenAIChatCompletion:
         functions,
     ):
         """Invoke the function, update the messages, returns functions argument for the next OpenAI API call."""
+
+        if isinstance(function_call, OpenAIObject):
+            function_call = function_call.to_dict()
+
         messages += [
             {
                 "role": "assistant",
                 "content": None,
-                "function_call": function_call.to_dict(),
+                "function_call": function_call,
             }
         ]
 
@@ -135,6 +145,7 @@ class OpenAIChatCompletion:
             messages (list): List of message objects for the conversation.
             scope (str): Scope of the functions to be used.
             orch_expr: If specified, overrides the orchestration dictionary, determining the API call flow.
+            stream (bool): If True, returns a generator that yields the API responses.
 
         Returns:
             API response with generated output.
@@ -214,11 +225,33 @@ class OpenAIChatCompletion:
                     *args,
                     **kwargs,
                 )
-            if stream:
-                # If stream is True, the API response is a generator, return right away
-                return api_response
 
-            self.token_usage_tracker.track_usage(api_response.usage)
+            if is_generator(api_response):
+                first_element, iterator = get_first_element_and_iterator(api_response)
+
+                if "content" in first_element.choices[0]["delta"] and isinstance(
+                    first_element.choices[0]["delta"]["content"], str
+                ):
+                    # if the first element is a message, return generator right away.
+                    return iterator
+                elif "function_call" in first_element.choices[0]["delta"]:
+                    # if the first element in generator is a function call, merge all the deltas.
+                    l = list(iterator)
+
+                    deltas = {}
+                    for element in l:
+                        delta = element["choices"][0]["delta"].to_dict()
+                        deltas = merge_dicts(deltas, delta)
+
+                    first_element["choices"][0]["message"] = deltas
+                    api_response = first_element
+                else:
+                    raise OpenAIChatCompletionException(
+                        f"Unsupported response from streaming API: {list(iterator)}"
+                    )
+
+            else:
+                self.token_usage_tracker.track_usage(api_response.usage)
 
             self.logger.debug(
                 {
@@ -260,6 +293,7 @@ class OpenAIChatCompletion:
                             "call_id": call_id,
                         }
                     )
+
                     break
             else:
                 raise OpenAIChatCompletionException(
