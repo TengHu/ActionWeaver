@@ -294,7 +294,6 @@ class OpenAIChatCompletion:
                         }
                     )
 
-                    # Todo: if stop or not
                     break
             else:
                 raise OpenAIChatCompletionException(
