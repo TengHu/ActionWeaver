@@ -12,6 +12,20 @@ class Place(BaseModel):
 
 
 class Folium(ActionHandlerMixin):
+    def verify_lib_installed(self):
+        import importlib
+
+        library_name = "folium"
+
+        try:
+            importlib.import_module(library_name)
+        except ImportError as e:
+            error_msg = (
+                f"The '{library_name}' library is not installed. You can install it using:"
+                f"pip install {library_name}"
+            )
+            raise Exception(error_msg) from e
+
     @action(name="ShowMap")
     def show_map(self, places: List[Place]) -> str:
         """
@@ -22,6 +36,8 @@ class Folium(ActionHandlerMixin):
 
         This method requires `folium` installed
         """
+        self.verify_lib_installed()
+
         import folium
 
         # Calculate the center of all places
