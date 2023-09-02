@@ -15,6 +15,17 @@ class ActionHandlerMixin:
     _action_handlers = ActionHandlers()
 
     def __post_init__(self):
+        # check if all action orchestration expressions are valid
+        for _, action in self._action_handlers.name_to_action.items():
+            if action.orch_expr:
+                if len(action.orch_expr) < 2:
+                    raise ActionHandlerMixinException(
+                        f"Action {action.name} must has at least two elements in its orchestration expression. The first element is the action itself. For example, SelectOne([{action.name}, action1, action2])."
+                    )
+                self._action_handlers.check_orchestration_expr_validity(
+                    action.orch_expr
+                )
+
         # bind action handlers to self
         self.instance_action_handlers = self._action_handlers.bind(self)
 
@@ -86,15 +97,6 @@ class ActionHandlerMixin:
         for _, attr_value in tuple(cls.__dict__.items()):
             if isinstance(attr_value, Action):
                 cls._action_handlers.name_to_action[attr_value.name] = attr_value
-
-        # check if all action orchestration expressions are valid
-        for _, action in cls._action_handlers.name_to_action.items():
-            if action.orch_expr:
-                if len(action.orch_expr) < 2:
-                    raise ActionHandlerMixinException(
-                        f"Action {action.name} must has at least two elements in its orchestration expression. The first element is the action itself. For example, SelectOne([{action.name}, action1, action2])."
-                    )
-                cls._action_handlers.check_orchestration_expr_validity(action.orch_expr)
 
     def action_to_pyvis_network(self):
         if self.instance_action_handlers is None:
