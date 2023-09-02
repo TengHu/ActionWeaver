@@ -11,7 +11,7 @@ from actionweaver.actions.action import (
     InstanceActionHandlers,
     parse_orchestration_expr,
 )
-from actionweaver.actions.orchestration import _ActionHandlerLLMInvoke
+from actionweaver.actions.orchestration import _ActionDefault, _ActionHandlerLLMInvoke
 from actionweaver.llms.openai.functions import Functions
 from actionweaver.llms.openai.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
@@ -103,11 +103,11 @@ class OpenAIChatCompletion:
             )
 
             # Update new functions for next OpenAI api call
-            # if name doesn't exist in orchestration dict, use default_expr
+            # if name doesn't exist in orchestration dict, use _ActionDefaultLLM which doesn't invoke functions
             expr = (
                 orchestration_dict[name]
                 if name in orchestration_dict
-                else orchestration_dict[default_expr]
+                else _ActionDefault()
             )
             return Functions.from_expr(
                 expr,
@@ -226,6 +226,7 @@ class OpenAIChatCompletion:
                     **kwargs,
                 )
 
+            # logic to handle streaming API response
             if is_generator(api_response):
                 first_element, iterator = get_first_element_and_iterator(api_response)
 
