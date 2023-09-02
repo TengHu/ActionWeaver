@@ -123,7 +123,9 @@ class OpenAIChatCompletion:
             )
             return functions
 
-    def create(self, messages, *args, scope=None, orch_expr=None, **kwargs):
+    def create(
+        self, messages, *args, scope=None, orch_expr=None, stream=False, **kwargs
+    ):
         """
         Invoke the OpenAI API with the provided messages and functions.
 
@@ -199,6 +201,7 @@ class OpenAIChatCompletion:
                 api_response = openai.ChatCompletion.create(
                     model=self.model,
                     messages=messages,
+                    stream=stream,
                     *args,
                     **function_argument,
                     **kwargs,
@@ -207,9 +210,13 @@ class OpenAIChatCompletion:
                 api_response = openai.ChatCompletion.create(
                     model=self.model,
                     messages=messages,
+                    stream=stream,
                     *args,
                     **kwargs,
                 )
+            if stream:
+                # If stream is True, the API response is a generator, return right away
+                return api_response
 
             self.token_usage_tracker.track_usage(api_response.usage)
 
