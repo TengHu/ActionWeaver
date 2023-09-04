@@ -4,7 +4,7 @@ from actionweaver import ActionHandlerMixin, action
 class LangChainTools(ActionHandlerMixin):
     def verify_lib_installed(self):
         try:
-            import langchain  # noqa: F401
+            import langchain
         except ImportError:
             raise ImportError(
                 "`langchain` package not found, please run `pip install langchain`"

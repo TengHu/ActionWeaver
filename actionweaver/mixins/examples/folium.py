@@ -14,7 +14,7 @@ class Place(BaseModel):
 class Folium(ActionHandlerMixin):
     def verify_lib_installed(self):
         try:
-            import folium  # noqa: F401
+            import folium
         except ImportError:
             raise ImportError(
                 "`folium` package not found, please run `pip install folium`"
