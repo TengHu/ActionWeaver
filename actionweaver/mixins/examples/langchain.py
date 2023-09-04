@@ -3,18 +3,12 @@ from actionweaver import ActionHandlerMixin, action
 
 class LangChainTools(ActionHandlerMixin):
     def verify_lib_installed(self):
-        import importlib
-
-        library_name = "langchain"
-
         try:
-            importlib.import_module(library_name)
-        except ImportError as e:
-            error_msg = (
-                f"The '{library_name}' library is not installed. You can install it using:"
-                f"pip install {library_name}"
+            import langchain  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "`langchain` package not found, please run `pip install langchain`"
             )
-            raise Exception(error_msg) from e
 
     @action(name="GoogleSearch")
     def google_search(self, query: str) -> str:

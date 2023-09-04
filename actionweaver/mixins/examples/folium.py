@@ -13,18 +13,12 @@ class Place(BaseModel):
 
 class Folium(ActionHandlerMixin):
     def verify_lib_installed(self):
-        import importlib
-
-        library_name = "folium"
-
         try:
-            importlib.import_module(library_name)
-        except ImportError as e:
-            error_msg = (
-                f"The '{library_name}' library is not installed. You can install it using:"
-                f"pip install {library_name}"
+            import folium  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "`folium` package not found, please run `pip install folium`"
             )
-            raise Exception(error_msg) from e
 
     @action(name="ShowMap")
     def show_map(self, places: List[Place]) -> str:
