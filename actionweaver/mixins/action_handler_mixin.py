@@ -49,6 +49,13 @@ class ActionHandlerMixin:
                 "An OpenAIChatCompletion instance is required in a class."
             )
 
+    @classmethod
+    def __post_init_subclass__(cls, **kwargs):
+        # add action to action handlers.
+        for _, attr_value in tuple(cls.__dict__.items()):
+            if isinstance(attr_value, Action):
+                cls._action_handlers.name_to_action[attr_value.name] = attr_value
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
@@ -93,10 +100,7 @@ class ActionHandlerMixin:
             ]
         )
 
-        # add action to action handlers.
-        for _, attr_value in tuple(cls.__dict__.items()):
-            if isinstance(attr_value, Action):
-                cls._action_handlers.name_to_action[attr_value.name] = attr_value
+        cls.__post_init_subclass__(kwargs=kwargs)
 
     def action_to_pyvis_network(self):
         if self.instance_action_handlers is None:

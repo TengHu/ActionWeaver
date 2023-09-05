@@ -245,6 +245,7 @@ class OpenAIChatCompletion:
                         deltas = merge_dicts(deltas, delta)
 
                     first_element["choices"][0]["message"] = deltas
+                    first_element["choices"][0]["delta"] = deltas
                     api_response = first_element
                 else:
                     raise OpenAIChatCompletionException(
