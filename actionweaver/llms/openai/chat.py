@@ -155,6 +155,8 @@ class OpenAIChatCompletion:
         Returns:
             API response with generated output.
         """
+
+        # Todo: pass call_id to the decorated method
         call_id = str(uuid.uuid4())
 
         # Restart token usage tracker
@@ -285,7 +287,9 @@ class OpenAIChatCompletion:
                     return resp
             elif "content" in message and message["content"]:
                 response = message["content"]
-                messages += [{"role": "assistant", "content": message["content"]}]
+
+                # ignore last message in the function loop
+                # messages += [{"role": "assistant", "content": message["content"]}]
                 if choice["finish_reason"] == "stop":
                     """
                     Stop Reasons:

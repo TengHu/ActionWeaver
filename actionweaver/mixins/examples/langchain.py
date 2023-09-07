@@ -11,19 +11,21 @@ class LangChainTools(ActionHandlerMixin):
             )
 
     @action(name="GoogleSearch")
-    def google_search(self, query: str) -> str:
+    def search(self, query: str):
         """
-        Perform a Google search using the provided query.
-
-        This action requires `langchain` and `google-api-python-client` installed, and GOOGLE_API_KEY, GOOGLE_CSE_ID environment variables.
-        See https://python.langchain.com/docs/integrations/tools/google_search.
+        Perform a Google search and return query results with titles and links.
 
         :param query: The search query to be used for the Google search.
-        :return: The search results as a string.
         """
-        self.verify_lib_installed()
-
         from langchain.utilities import GoogleSearchAPIWrapper
 
         search = GoogleSearchAPIWrapper()
-        return search.run(query)
+        res = search.results(query, 10)
+        formatted_data = ""
+
+        # Iterate through the data and append each item to the formatted_data string
+        for idx, item in enumerate(res):
+            formatted_data += f"({idx}) {item['title']}: {item['snippet']}\n"
+            formatted_data += f"[Source]: {item['link']}\n\n"
+
+        return formatted_data
