@@ -49,7 +49,7 @@ class OpenAIChatCompletion:
         default_expr,
         functions,
     ):
-        """Invoke the function, update the messages, returns functions argument for the next OpenAI API call."""
+        """Invoke the function, update the messages, returns functions argument for the next OpenAI API call or halt the function loop and return the response."""
 
         if isinstance(function_call, OpenAIObject):
             function_call = function_call.to_dict()
@@ -83,6 +83,7 @@ class OpenAIChatCompletion:
 
             # Invoke action
             function_response = self.instance_action_handlers[name](**arguments)
+            stop = self.instance_action_handlers[name].action.stop
             messages += [
                 {
                     "role": "function",
@@ -99,6 +100,7 @@ class OpenAIChatCompletion:
                     "action_response": function_response,
                     "timestamp": time.time(),
                     "call_id": call_id,
+                    "stop": stop,
                 }
             )
 
@@ -109,9 +111,12 @@ class OpenAIChatCompletion:
                 if name in orchestration_dict
                 else _ActionDefault()
             )
-            return Functions.from_expr(
-                expr,
-                self.instance_action_handlers,
+            return (
+                Functions.from_expr(
+                    expr,
+                    self.instance_action_handlers,
+                ),
+                (stop, function_response),
             )
         else:
             unavailable_function_msg = f"{name} is not a valid function name, use one of the following: {', '.join([func['name'] for func in functions.functions])}"
@@ -131,7 +136,7 @@ class OpenAIChatCompletion:
                     "call_id": call_id,
                 }
             )
-            return functions
+            return functions, (False, None)
 
     def create(
         self, messages, *args, scope=None, orch_expr=None, stream=False, **kwargs
@@ -268,7 +273,7 @@ class OpenAIChatCompletion:
             message = choice["message"]
 
             if "function_call" in message and message["function_call"]:
-                functions = self._invoke_function(
+                functions, (stop, resp) = self._invoke_function(
                     call_id,
                     messages,
                     message["function_call"],
@@ -276,6 +281,8 @@ class OpenAIChatCompletion:
                     default_expr,
                     functions,
                 )
+                if stop:
+                    return resp
             elif "content" in message and message["content"]:
                 response = message["content"]
                 messages += [{"role": "assistant", "content": message["content"]}]

@@ -18,7 +18,14 @@ class ActionException(Exception):
     pass
 
 
-def action(name, scope=DEFAULT_ACTION_SCOPE, logger=None, orch_expr=None, models=[]):
+def action(
+    name,
+    scope=DEFAULT_ACTION_SCOPE,
+    logger=None,
+    orch_expr=None,
+    models=[],
+    stop=False,
+):
     """
     Decorator function to create an Action object.
 
@@ -27,7 +34,7 @@ def action(name, scope=DEFAULT_ACTION_SCOPE, logger=None, orch_expr=None, models
     - scope (str): Scope of the action, default is DEFAULT_ACTION_SCOPE.
     - logger (logging.Logger): Logger instance to log information, default is None.
     - models (list[pydantic.BaseModel]): List of pydantic models to be used in the action.
-
+    - stop (bool): If True, the agent will stop immediately after invoking this action.
     Returns:
     - create_action: A function that takes a decorated object and returns an Action object.
     """
@@ -43,6 +50,7 @@ def action(name, scope=DEFAULT_ACTION_SCOPE, logger=None, orch_expr=None, models
             decorated_obj=decorated_obj,
             orch_expr=orch_expr,
             logger=_logger,
+            stop=stop,
         ).build_pydantic_model_cls(models=models)
 
         return action
@@ -58,11 +66,13 @@ class Action:
         scope=None,
         orch_expr=None,
         logger=None,
+        stop=False,
     ):
         self.name = name
         self.scope = scope or DEFAULT_ACTION_SCOPE
         self.logger = logger
         self.orch_expr = orch_expr
+        self.stop = stop
 
         if decorated_obj.__doc__ is None:
             raise ActionException(
