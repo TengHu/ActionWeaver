@@ -44,6 +44,7 @@ class OpenAIChatCompletion:
         self,
         call_id,
         messages,
+        model,
         function_call,
         orchestration_dict,
         default_expr,
@@ -74,7 +75,7 @@ class OpenAIChatCompletion:
                         "message": "Parsing function call arguments from OpenAI response ",
                         "arguments": function_call["arguments"],
                         "timestamp": time.time(),
-                        "model": self.model,
+                        "model": model,
                         "call_id": call_id,
                     },
                     exc_info=True,
@@ -159,6 +160,8 @@ class OpenAIChatCompletion:
         # Todo: pass call_id to the decorated method
         call_id = str(uuid.uuid4())
 
+        model = kwargs.get("model", self.model)
+
         # Restart token usage tracker
         self.token_usage_tracker.clear()
 
@@ -187,7 +190,7 @@ class OpenAIChatCompletion:
         self.logger.debug(
             {
                 "message": "Creating new chat completion",
-                "model": self.model,
+                "model": model,
                 "scope": scope,
                 "input_messages": messages,
                 "timestamp": time.time(),
@@ -207,7 +210,7 @@ class OpenAIChatCompletion:
                     "message": "Calling OpenAI API",
                     "call_id": call_id,
                     "input_messages": messages,
-                    "model": self.model,
+                    "model": model,
                     "scope": scope,
                     "timestamp": time.time(),
                     **functions.to_arguments(),
@@ -217,20 +220,16 @@ class OpenAIChatCompletion:
             function_argument = functions.to_arguments()
             if function_argument["functions"]:
                 api_response = openai.ChatCompletion.create(
-                    model=self.model,
+                    model=model,
                     messages=messages,
                     stream=stream,
-                    *args,
                     **function_argument,
-                    **kwargs,
                 )
             else:
                 api_response = openai.ChatCompletion.create(
-                    model=self.model,
+                    model=model,
                     messages=messages,
                     stream=stream,
-                    *args,
-                    **kwargs,
                 )
 
             # logic to handle streaming API response
@@ -278,6 +277,7 @@ class OpenAIChatCompletion:
                 functions, (stop, resp) = self._invoke_function(
                     call_id,
                     messages,
+                    model,
                     message["function_call"],
                     orchestration_dict,
                     default_expr,
@@ -301,7 +301,7 @@ class OpenAIChatCompletion:
                     self.logger.debug(
                         {
                             "message": "Model decides to stop",
-                            "model": self.model,
+                            "model": model,
                             "timestamp": time.time(),
                             "call_id": call_id,
                         }
