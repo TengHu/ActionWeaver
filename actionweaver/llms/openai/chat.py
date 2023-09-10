@@ -161,6 +161,7 @@ class OpenAIChatCompletion:
         call_id = str(uuid.uuid4())
 
         model = kwargs.get("model", self.model)
+        temperature = kwargs.get("temperature", 0.0)
 
         # Restart token usage tracker
         self.token_usage_tracker.clear()
@@ -221,6 +222,7 @@ class OpenAIChatCompletion:
             if function_argument["functions"]:
                 api_response = openai.ChatCompletion.create(
                     model=model,
+                    temperature=temperature,
                     messages=messages,
                     stream=stream,
                     **function_argument,
@@ -228,6 +230,7 @@ class OpenAIChatCompletion:
             else:
                 api_response = openai.ChatCompletion.create(
                     model=model,
+                    temperature=temperature,
                     messages=messages,
                     stream=stream,
                 )
