@@ -10,8 +10,8 @@ build:
     python: "3.11"
     
 
-sphinx:
-  configuration: docs/conf.py
+mkdocs:
+  configuration: docs/mkdocs.yml
 
 # Optionally build your docs in additional formats such as PDF and ePub
 # formats:
