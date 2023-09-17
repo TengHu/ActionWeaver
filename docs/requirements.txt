@@ -1,6 +1,5 @@
 -e .
-alabaster==0.7.13
-    # via sphinx
+piccolo-theme == 0.17.0
 babel==2.12.1
     # via sphinx
 certifi==2023.7.22
