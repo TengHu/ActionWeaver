@@ -6,15 +6,14 @@
 Welcome to ActionWeaver's documentation!
 ========================================
 
+Contents
+--------
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
+   usage
+   api
 
+Check out the :doc:`usage` section for further information, including how to
+:ref:`install <installation>` the project.
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
