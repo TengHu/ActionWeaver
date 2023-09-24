@@ -1,32 +1,20 @@
-<img src="docs/figures/scale_tools.png">
-
-# ActionWeaver
+# High-Level Concepts
 
 
-🪡 An framework for building LLM agents by providing the means for orchestrating and scaling external tools effectively.🪡
+<img src="../../../figures/scale_tools.png">
 
 
-Features:
-- **Extensibility**: Easily integrate ANY Python code into your agent's toolbox with just a single line of code, or combining functions/tools from other ecosystems like LangChain or Llama Index.
-- **Function Orchestration**: Build complex orchestration of function callings. including intricate hierarchies or chains.
-- **Debuggability**: ActionWeaver adopts structured logging, making the developer experience more efficient.
+ActionWeaver helps you easily build LLM-powered agents that excel at dispatching and orchestrating external tools efficiently at scale. It currently leverages OpenAI functions behind the scenes.
 
-ActionWeaver's vision is to pioneer a new era in program development by seamlessly merging traditional programming techniques with the powerful reasoning capabilities of Language Model Models.
+In this guide focusing on high-level concepts, you will gain insights into:
 
-**[More use cases and demos](docs/source/notebooks/use_cases.ipynb)**
+The fundamental concepts and mental models that underpin the functioning of ActionWeaver, and some examples as well.
 
-## Installation
-You can install ActionWeaver using pip:
+## Agent
 
-```python
-pip install actionweaver
-```
+An agent is a class that inherits from **ActionHandlerMixin** and utilizes **Action**. An agent class is required to have a single OpenAIChatCompletion object. Upon agent initialization, the ActionHandlerMixin will parse all Actions, creating an orchestration graph. When the OpenAIChatCompletion is invoked, it will utilize this action orchestration graph in an iterative process while also making calls to the OpenAI chat completion endpoint.
 
-## Quickstart
-
-Developers can construct an agent using OpenAI's LLM, and further enhance it using ActionWeaver's Action decorators. 
-For instance, to enable the `get_current_time` function below to be invoked by an LLM, simply decorate it with the `GetCurrentTime` action:
-
+Example: 
 ```python
 import logging
 from typing import List
@@ -60,26 +48,17 @@ class AgentV0(ActionHandlerMixin):
         current_time = datetime.datetime.now()
         
         return f"The current time is {current_time}"
-
-agent = AgentV0(logger)
-```
-ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved. 
-
-You can invoke actions just like regular instance methods
-```python
-agent.get_current_time() # Output: 'The current time is 20:34.'
-```
-You can also interact with the agent by asking questions, and the agent will dispatch the corresponding action using OpenAI functions
-```python
-agent("what time is it") # Output: 'The current time is 20:40:30.'
 ```
 
-##  Grouping and Extending Actions Through Inheritance
+## Action
 
-In this example, we wrap the [LangChain Google search](https://python.langchain.com/docs/integrations/tools/google_search) as a method, creating a powerful and extensible design pattern. By defining a new agent that inherits from the previous agent and LangChainTools, the new agent will inherit actions from both classes. This approach leverages object-oriented principles to enable rapid development and easy expansion of the agent's capabilities.
+Action is a core concept in ActionWeaver, where each Action corresponds to a function within the OpenAI realm. In ActionWeaver, you have the capability to convert any Python function into an action that your agent can dispatch by merely adding an action decorator, as demonstrated in the example above. The agent will utilize the function's docstring as the description for the OpenAI API.
 
-In the example below, through inheritance, the new agent can utilize the Google search tool method as well as any other actions defined in the parent classes. This structure makes it simple to build upon existing code.
+### Grouping and Extending Actions Through Inheritance
 
+Users can also inherit actions from parent ActionWeaver agent class. In this example below, , creating a powerful and extensible design pattern. 
+
+In the example below, we wrap the [LangChain Google search](https://python.langchain.com/docs/integrations/tools/google_search) as a method. With inheritance, the new agent can utilize the Google search tool method as well as any other actions defined in the parent classes. This structure makes it simple to compose agent upon existing code.
 
 ```python
 class LangChainTools(ActionHandlerMixin):
@@ -101,18 +80,11 @@ class LangChainTools(ActionHandlerMixin):
     
 class AgentV1(AgentV0, LangChainTools):
     pass
-
-agent = AgentV1(logger)
-agent("what happened today")
-
-"""
-Output: Here are some events that happened or are scheduled for today (August 23, 2023):\n\n1. Agreement State Event: Event Number 56678 - Maine Radiation Control Program.\n2. Childbirth Class - August 23, 2023, at 6:00 pm.\n3. No events scheduled for August 23, 2023, at Ambassador.\n4. Fine Arts - Late Start.\n5. Millersville University events.\n6. Regular City Council Meeting - August 23, 2023, at 10:00 AM.\n\nPlease note that these are just a few examples, and there may be other events happening as well.
-"""
 ```
 
-## Orchestration of Actions
+## Orchestration
 
-ActionWeaver enables the design of hierarchies and chains of actions with following features:
+One of ActionWeaver core feature is orchestration of actions. Each action has these two following attributes: 
 
 **Scope**: Each action is confined to its own visibility scope.
 
@@ -131,8 +103,6 @@ Instead of overwhelming OpenAI with an extensive list of functions, we can desig
 
 - ListFiles with `file` scope.
 - ReadFile with `file` scope.
-
-
 
 ```python
 class FileUtility(AgentV0):
@@ -181,8 +151,6 @@ class FileUtility(AgentV0):
         with open(file_path, 'r') as file:
             content = file.read()
         return f"The file content: \n{content}"
-
-agent = FileUtility(logger)
 ```
 
 ### Example: Chains of Actions
@@ -236,25 +204,7 @@ class FileUtility(AgentV0):
         with open(file_path, 'r') as file:
             content = file.read()
         return f"The file content: \n{content}"
-
-agent = FileUtility(logger)
 ```
 
-## Contributing
-Contributions in the form of bug fixes, new features, documentation improvements, and pull requests are VERY welcomed.
-
-## 📔 Citation & Acknowledgements
-
-If you find ActionWeaver useful, please consider citing the project:
-
-```bash
-@software{Teng_Hu_ActionWeaver_2023,
-    author = {Teng Hu},
-    license = {Apache-2.0},
-    month = Aug,
-    title = {ActionWeaver: Application Framework for LLMs},
-    url = {https://github.com/TengHu/ActionWeaver},
-    year = {2023}
-}
-```
-
+## Rewinding Actions
+WIP
