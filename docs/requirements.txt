@@ -3,3 +3,4 @@ sphinx
 m2r2
 nbsphinx
 ipykernel
+sphinx-rtd-theme
