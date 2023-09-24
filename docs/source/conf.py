@@ -20,17 +20,22 @@ release = "0.0.9"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "nbsphinx",
+    "m2r2",
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
 ]
 
+source_suffix = [".rst", ".md"]
+# note: do not add .ipynb when nbspinx is enabled, otherwise you get the "missing title" error
+
 templates_path = ["_templates"]
-exclude_patterns = []
 
+# Exclude build directory and Jupyter backup files:
+exclude_patterns = ["_build", "**.ipynb_checkpoints"]
 
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
+html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+html_logo = "_static/logo.png"

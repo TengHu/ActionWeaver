@@ -9,11 +9,23 @@ Welcome to ActionWeaver's documentation!
 Contents
 --------
 
-.. toctree::
 
-   usage
-   api
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: get started
+   :hidden:
+
+   getting_started/introduction.md
+
+.. toctree::
+   :maxdepth: 1
+   :caption: use cases
+   :hidden:
+
+   notebooks/demo
+
 
 Check out the :doc:`usage` section for further information, including how to
 :ref:`install <installation>` the project.
-

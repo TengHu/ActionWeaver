@@ -1,8 +1,6 @@
 API
 ===
+.. toctree::
+    :maxdepth: 4
 
-.. autosummary::
-    :toctree: generated
-    :recursive:
-
-    actionweaver
+    apidocs/actionweaver
