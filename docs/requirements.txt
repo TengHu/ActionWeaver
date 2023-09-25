@@ -1,5 +1,4 @@
-
-sphinx
+sphinx<7
 m2r2
 nbsphinx
 ipykernel
