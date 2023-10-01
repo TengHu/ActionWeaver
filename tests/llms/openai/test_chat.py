@@ -6,7 +6,7 @@ from unittest.mock import Mock, call, patch
 from openai.openai_object import OpenAIObject
 
 from actionweaver.actions import Action, ActionHandlers, action
-from actionweaver.actions.orchestration import RequireNext, SelectOne
+from actionweaver.actions.orchestration_expr import RequireNext, SelectOne
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 
