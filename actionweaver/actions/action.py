@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from actionweaver.actions.orchestration import (
+from actionweaver.actions.orchestration import Orchestration
+from actionweaver.actions.orchestration_expr import (
     RequireNext,
     SelectOne,
     _ActionHandlerLLMInvoke,
@@ -182,7 +183,7 @@ class ActionOrchestrationParseError(Exception):
 
 
 def parse_orchestration_expr(expr):
-    orch_dict = {}
+    orch_dict = Orchestration()
 
     def get_first_action(l):
         """
@@ -256,7 +257,7 @@ class InstanceActionHandlers:
     def __init__(self, instance, action_handlers: ActionHandlers, *args, **kwargs):
         self.action_handlers = action_handlers
         self.instance = instance
-        self.orch_dict = {}
+        self.orch_dict = Orchestration()
 
     def __getitem__(self, key) -> InstanceAction:
         val = self.action_handlers.name_to_action[key]
@@ -275,9 +276,14 @@ class InstanceActionHandlers:
         """
         Parse orchestration expressions from all actions.
         """
-        orch_dict = {
-            _ActionHandlerLLMInvoke(DEFAULT_ACTION_SCOPE): _ActionHandlerSelectOne([])
-        }
+        # orch_dict = {
+        #     _ActionHandlerLLMInvoke(DEFAULT_ACTION_SCOPE): _ActionHandlerSelectOne([])
+        # }
+
+        orch_dict = Orchestration()
+        orch_dict[
+            _ActionHandlerLLMInvoke(DEFAULT_ACTION_SCOPE)
+        ] = _ActionHandlerSelectOne([])
 
         for _, action in self.action_handlers.name_to_action.items():
             if action.orch_expr:
