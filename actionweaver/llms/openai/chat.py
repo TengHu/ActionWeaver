@@ -2,15 +2,13 @@ import json
 import logging
 import time
 import uuid
+from argparse import Action
 
 import openai
 from openai.openai_object import OpenAIObject
 
-from actionweaver.actions.action import (
-    ActionHandlers,
-    InstanceActionHandlers,
-    parse_orchestration_expr,
-)
+from actionweaver.actions.action import ActionHandlers
+from actionweaver.actions.orchestration import Orchestration
 from actionweaver.actions.orchestration_expr import (
     _ActionDefault,
     _ActionHandlerLLMInvoke,
@@ -32,16 +30,17 @@ class OpenAIChatCompletionException(Exception):
 class OpenAIChatCompletion:
     def __init__(self, model, token_usage_tracker=None, logger=None):
         self.model = model
-        self.instance_action_handlers = InstanceActionHandlers(
-            None, ActionHandlers()
-        ).build_orchestration_dict()
+        self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
 
-    def _bind_action_handlers(self, instance_action_handlers: InstanceActionHandlers):
-        self.instance_action_handlers = instance_action_handlers
+    def _bind_action_handlers(self, action_handlers: ActionHandlers):
+        self.action_handlers = action_handlers
+
+    def _bind_orchestration(self, orch: Orchestration):
+        self.orch = orch
 
     def _invoke_function(
         self,

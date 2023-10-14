@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from actionweaver.actions import Action, ActionHandlers, action
-from actionweaver.actions.orchestration import Orchestration
+from actionweaver.actions.orchestration import Orchestration, build_orchestration_dict
 from actionweaver.actions.orchestration_expr import (
     RequireNext,
     SelectOne,
@@ -33,10 +33,10 @@ class OrchestrationTestCase(unittest.TestCase):
         for action in actions:
             action_handler.name_to_action[action.name] = action
 
-        instance_action_handler = action_handler.bind(None).build_orchestration_dict()
+        orch = build_orchestration_dict(action_handler)
 
         self.assertEqual(
-            instance_action_handler.orch_dict,
+            orch,
             Orchestration(
                 {
                     _ActionHandlerLLMInvoke(
@@ -80,10 +80,10 @@ class OrchestrationTestCase(unittest.TestCase):
         for action in actions:
             action_handler.name_to_action[action.name] = action
 
-        instance_action_handler = action_handler.bind(None).build_orchestration_dict()
+        orch = build_orchestration_dict(action_handler)
 
         self.assertEqual(
-            instance_action_handler.orch_dict,
+            orch,
             Orchestration(
                 {
                     _ActionHandlerLLMInvoke(
@@ -118,10 +118,10 @@ class OrchestrationTestCase(unittest.TestCase):
         for action in actions:
             action_handler.name_to_action[action.name] = action
 
-        instance_action_handler = action_handler.bind(None).build_orchestration_dict()
+        orch = build_orchestration_dict(action_handler)
 
         self.assertEqual(
-            instance_action_handler.orch_dict,
+            orch,
             Orchestration(
                 {
                     _ActionHandlerLLMInvoke(scope=DEFAULT_ACTION_SCOPE): ["action1"],

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from tkinter import N
-
+from actionweaver.actions import orchestration
 from actionweaver.actions.action import Action, ActionHandlers
-from actionweaver.llms.openai import chat
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 
@@ -26,12 +24,9 @@ class ActionHandlerMixin:
                     action.orch_expr
                 )
 
-        # bind action handlers to self
-        self.instance_action_handlers = self._action_handlers.bind(self)
+        self.orch = orchestration.build_orchestration_dict(self._action_handlers)
 
-        # build action orchestration dict
-        self.instance_action_handlers.build_orchestration_dict()
-
+        # Implicitly bind chat completion to action handlers and orchestration.
         chat_completion_found = False
         for _, attr_value in tuple(self.__dict__.items()):
             if isinstance(attr_value, OpenAIChatCompletion):
@@ -40,8 +35,9 @@ class ActionHandlerMixin:
                         "Only one OpenAIChatCompletion instance is allowed in a class."
                     )
 
-                # bind instance action handlers to llm
-                attr_value._bind_action_handlers(self.instance_action_handlers)
+                # bind action handlers to chat
+                attr_value._bind_action_handlers(self._action_handlers)
+                attr_value._bind_orchestration(self.orch)
                 chat_completion_found = True
 
         if not chat_completion_found:
@@ -101,11 +97,3 @@ class ActionHandlerMixin:
         )
 
         cls.__post_init_subclass__(kwargs=kwargs)
-
-    def action_to_pyvis_network(self):
-        if self.instance_action_handlers is None:
-            raise ActionHandlerMixinException(
-                "Action handlers not initialized. Please call __post_init__ first."
-            )
-
-        return self.instance_action_handlers.to_pyvis_network()

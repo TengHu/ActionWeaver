@@ -16,8 +16,7 @@ class Functions:
         self.function_call = function_call
 
     @classmethod
-    def from_expr(cls, expr, instance_action_handlers):
-        action_handlers = instance_action_handlers.action_handlers
+    def from_expr(cls, expr, action_handlers):
         if isinstance(expr, _ActionDefault):
             return cls()
         elif isinstance(expr, _ActionHandlerRequired):
