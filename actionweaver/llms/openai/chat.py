@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import json
 import logging
 import time
 import uuid
+from argparse import Action
+from typing import List
 
 import openai
 from openai.openai_object import OpenAIObject
 
-from actionweaver.actions.action import (
-    ActionHandlers,
-    InstanceActionHandlers,
+from actionweaver.actions.action import ActionHandlers
+from actionweaver.actions.orchestration import (
+    Orchestration,
+    build_orchestration_dict,
     parse_orchestration_expr,
 )
 from actionweaver.actions.orchestration_expr import (
@@ -32,16 +37,17 @@ class OpenAIChatCompletionException(Exception):
 class OpenAIChatCompletion:
     def __init__(self, model, token_usage_tracker=None, logger=None):
         self.model = model
-        self.instance_action_handlers = InstanceActionHandlers(
-            None, ActionHandlers()
-        ).build_orchestration_dict()
+        self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
 
-    def _bind_action_handlers(self, instance_action_handlers: InstanceActionHandlers):
-        self.instance_action_handlers = instance_action_handlers
+    def _bind_action_handlers(
+        self, action_handlers: ActionHandlers
+    ) -> OpenAIChatCompletion:
+        self.action_handlers = action_handlers
+        return self
 
     def _invoke_function(
         self,
@@ -51,6 +57,7 @@ class OpenAIChatCompletion:
         function_call,
         orchestration_dict,
         default_expr,
+        action_handler: ActionHandlers,
         functions,
     ):
         """Invoke the function, update the messages, returns functions argument for the next OpenAI API call or halt the function loop and return the response."""
@@ -69,7 +76,7 @@ class OpenAIChatCompletion:
         name = function_call["name"]
         arguments = function_call["arguments"]
 
-        if self.instance_action_handlers.contains(name):
+        if action_handler.contains(name):
             try:
                 arguments = json.loads(function_call["arguments"])
             except json.decoder.JSONDecodeError as e:
@@ -86,8 +93,8 @@ class OpenAIChatCompletion:
                 raise OpenAIChatCompletionException(e) from e
 
             # Invoke action
-            function_response = self.instance_action_handlers[name](**arguments)
-            stop = self.instance_action_handlers[name].action.stop
+            function_response = action_handler[name](**arguments)
+            stop = action_handler[name].stop
             messages += [
                 {
                     "role": "function",
@@ -118,7 +125,7 @@ class OpenAIChatCompletion:
             return (
                 Functions.from_expr(
                     expr,
-                    self.instance_action_handlers,
+                    action_handler,
                 ),
                 (stop, function_response),
             )
@@ -143,7 +150,15 @@ class OpenAIChatCompletion:
             return functions, (False, None)
 
     def create(
-        self, messages, *args, scope=None, orch_expr=None, stream=False, **kwargs
+        self,
+        messages,
+        *args,
+        scope=None,
+        orch_expr=None,
+        stream=False,
+        action_handler: ActionHandlers = None,
+        actions: List[Action] = [],
+        **kwargs,
     ):
         """
         Invoke the OpenAI API with the provided messages and functions.
@@ -173,12 +188,19 @@ class OpenAIChatCompletion:
             scope = DEFAULT_ACTION_SCOPE
         default_expr = _ActionHandlerLLMInvoke(scope)
 
-        orchestration_dict = self.instance_action_handlers.orch_dict
+        # initialize action handlers
+        if action_handler is None:
+            if actions:
+                action_handler = ActionHandlers.from_actions(actions)
+            else:
+                action_handler = self.action_handlers
+
+        # Build orchestration
+        orchestration_dict = build_orchestration_dict(action_handler)
+
         # If an orchestration expression is provided, override the orchestration dictionary
         if orch_expr is not None:
-            self.instance_action_handlers.action_handlers.check_orchestration_expr_validity(
-                orch_expr
-            )
+            action_handler.check_orchestration_expr_validity(orch_expr)
 
             scope = "_llm_orchestration"
             # Construct a new orchestration dictionary using the parsed orchestration expression
@@ -205,7 +227,7 @@ class OpenAIChatCompletion:
         response = None
         functions = Functions.from_expr(
             orchestration_dict[default_expr],
-            self.instance_action_handlers,
+            action_handler,
         )
 
         while True:
@@ -287,6 +309,7 @@ class OpenAIChatCompletion:
                     message["function_call"],
                     orchestration_dict,
                     default_expr,
+                    action_handler,
                     functions,
                 )
                 if stop:

@@ -79,26 +79,29 @@ class FunctionsTestCase(unittest.TestCase):
                 "function_call": "auto",
             },
         )
+
         self.assertEqual(
             Functions.from_expr(
                 _ActionHandlerRequired("action1"),
                 action_handler,
             ).to_arguments(),
             {
-                "functions": {
-                    "description": "mock method",
-                    "name": "action1",
-                    "parameters": {
-                        "properties": {
-                            "a": {"title": "A", "type": "integer"},
-                            "b": {"title": "B", "type": "integer"},
-                            "c": {"default": "qux", "title": "C", "type": "string"},
+                "functions": [
+                    {
+                        "description": "mock method",
+                        "name": "action1",
+                        "parameters": {
+                            "properties": {
+                                "a": {"title": "A", "type": "integer"},
+                                "b": {"title": "B", "type": "integer"},
+                                "c": {"default": "qux", "title": "C", "type": "string"},
+                            },
+                            "required": ["a", "b"],
+                            "title": "Mock_Method",
+                            "type": "object",
                         },
-                        "required": ["a", "b"],
-                        "title": "Mock_Method",
-                        "type": "object",
-                    },
-                },
+                    }
+                ],
                 "function_call": {"name": "action1"},
             },
         )
