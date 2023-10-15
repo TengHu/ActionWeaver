@@ -17,7 +17,7 @@ class Functions:
 
     @classmethod
     def from_expr(cls, expr, action_handlers):
-        if isinstance(expr, _ActionDefault):
+        if isinstance(expr, (_ActionHandlerLLMInvoke, _ActionDefault)):
             return cls()
         elif isinstance(expr, _ActionHandlerRequired):
             return cls(

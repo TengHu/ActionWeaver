@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from actionweaver.actions import orchestration
-from actionweaver.actions.action import Action, ActionHandlers
+from actionweaver.actions.action import Action, ActionHandlers, InstanceAction
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 
@@ -14,7 +14,7 @@ class ActionHandlerMixin:
 
     def __post_init__(self):
         # check if all action orchestration expressions are valid
-        for _, action in self._action_handlers.name_to_action.items():
+        for name, action in self._action_handlers.name_to_action.items():
             if action.orch_expr:
                 if len(action.orch_expr) < 2:
                     raise ActionHandlerMixinException(
@@ -23,6 +23,9 @@ class ActionHandlerMixin:
                 self._action_handlers.check_orchestration_expr_validity(
                     action.orch_expr
                 )
+
+            # bind action to instance
+            self._action_handlers.name_to_action[name] = action.bind(self)
 
         self.orch = orchestration.build_orchestration_dict(self._action_handlers)
 
@@ -37,7 +40,6 @@ class ActionHandlerMixin:
 
                 # bind action handlers to chat
                 attr_value._bind_action_handlers(self._action_handlers)
-                attr_value._bind_orchestration(self.orch)
                 chat_completion_found = True
 
         if not chat_completion_found:

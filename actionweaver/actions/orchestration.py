@@ -21,6 +21,19 @@ class Orchestration:
         if data is not None:
             self.data |= data
 
+    def pop(self, key, default=None):
+        """
+        Remove the item with the specified key from the data dictionary and return its value.
+        If the key is not found and a default value is provided, return the default value.
+        If the key is not found and no default value is provided, raise a KeyError.
+        """
+        if key in self.data:
+            return self.data.pop(key)
+        elif default is not None:
+            return default
+        else:
+            raise KeyError(key)
+
     def __getitem__(self, key):
         return self.data[key]
 

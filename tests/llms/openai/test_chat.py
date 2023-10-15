@@ -5,7 +5,7 @@ from unittest.mock import Mock, call, patch
 
 from openai.openai_object import OpenAIObject
 
-from actionweaver.actions import Action, ActionHandlers, action
+from actionweaver.actions import Action, ActionHandlers
 from actionweaver.actions.orchestration_expr import RequireNext, SelectOne
 from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
@@ -81,14 +81,13 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             messages,
             [
                 {"role": "user", "content": "Hi!"},
-                {"role": "assistant", "content": "Hello! what can I do for you"},
             ],
         )
         self.assertEqual(response, "Hello! what can I do for you")
 
     @patch("openai.ChatCompletion.create")
     def test_create_with_functions1(self, mock_create):
-        def mock_method(self, text: str):
+        def mock_method(text: str):
             """mock method"""
             return text
 
@@ -98,9 +97,9 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         ]
         action_handler = ActionHandlers()
         action_handler.name_to_action["action1"] = actions[0]
-        instance_action_handler = action_handler.bind(None).build_orchestration_dict()
-        chat_completion = OpenAIChatCompletion(model="test")
-        chat_completion._bind_action_handlers(instance_action_handler)
+        chat_completion = OpenAIChatCompletion(model="test")._bind_action_handlers(
+            action_handler
+        )
 
         # Define the expected functions arguments and return values in the API call
         expected_functions_and_results = [
@@ -111,7 +110,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                 ),
             ),
             (
-                {"functions": ["action1"], "function_call": "auto"},
+                {},
                 self.generate_mock_message_response("last message"),
             ),
         ]
@@ -128,14 +127,20 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         # Then
         # Use a loop to iterate over expected calls and assert function arguments in the API call
         for i, actual_call in enumerate(mock_create.call_args_list):
-            self.assertEqual(
-                [func["name"] for func in actual_call.kwargs["functions"]],
-                expected_functions_and_results[i][0]["functions"],
-            )
-            self.assertEqual(
-                actual_call.kwargs["function_call"],
-                expected_functions_and_results[i][0]["function_call"],
-            )
+            if "functions" in actual_call.kwargs:
+                self.assertEqual(
+                    [func["name"] for func in actual_call.kwargs["functions"]],
+                    expected_functions_and_results[i][0]["functions"],
+                )
+                self.assertEqual(
+                    actual_call.kwargs["function_call"],
+                    expected_functions_and_results[i][0]["function_call"],
+                )
+            else:
+                self.assertFalse("functions" in expected_functions_and_results[i][0])
+                self.assertFalse(
+                    "function_call" in expected_functions_and_results[i][0]
+                )
 
         self.assertEqual(
             messages,
@@ -150,14 +155,13 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                     "role": "assistant",
                 },
                 {"content": "echo1", "name": "action1", "role": "function"},
-                {"content": "last message", "role": "assistant"},
             ],
         )
         self.assertEqual(response, "last message")
 
     @patch("openai.ChatCompletion.create")
     def test_create_with_functions2(self, mock_create):
-        def mock_method(self, text: str):
+        def mock_method(text: str):
             """mock method"""
             return text
 
@@ -188,9 +192,9 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         action_handler.name_to_action["action2"] = actions[1]
         action_handler.name_to_action["action3"] = actions[2]
         action_handler.name_to_action["action4"] = actions[3]
-        instance_action_handler = action_handler.bind(None).build_orchestration_dict()
-        chat_completion = OpenAIChatCompletion(model="test")
-        chat_completion._bind_action_handlers(instance_action_handler)
+        chat_completion = OpenAIChatCompletion(model="test")._bind_action_handlers(
+            action_handler
+        )
 
         # Define the expected functions arguments and return values in the API call
         expected_functions_and_results = [
@@ -225,10 +229,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                 ),
             ),
             (
-                {
-                    "functions": ["action1", "action2", "action3", "action4"],
-                    "function_call": "auto",
-                },
+                {},
                 self.generate_mock_message_response("last message"),
             ),
         ]
@@ -245,14 +246,20 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         # Then
         # Use a loop to iterate over expected calls and assert function arguments in the API call
         for i, actual_call in enumerate(mock_create.call_args_list):
-            self.assertEqual(
-                [func["name"] for func in actual_call.kwargs["functions"]],
-                expected_functions_and_results[i][0]["functions"],
-            )
-            self.assertEqual(
-                actual_call.kwargs["function_call"],
-                expected_functions_and_results[i][0]["function_call"],
-            )
+            if "functions" in actual_call.kwargs:
+                self.assertEqual(
+                    [func["name"] for func in actual_call.kwargs["functions"]],
+                    expected_functions_and_results[i][0]["functions"],
+                )
+                self.assertEqual(
+                    actual_call.kwargs["function_call"],
+                    expected_functions_and_results[i][0]["function_call"],
+                )
+            else:
+                self.assertFalse("functions" in expected_functions_and_results[i][0])
+                self.assertFalse(
+                    "function_call" in expected_functions_and_results[i][0]
+                )
 
         self.assertEqual(
             messages,
@@ -294,14 +301,13 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                     "role": "assistant",
                 },
                 {"content": "echo4", "name": "action4", "role": "function"},
-                {"content": "last message", "role": "assistant"},
             ],
         )
         self.assertEqual(response, "last message")
 
     @patch("openai.ChatCompletion.create")
     def test_create_with_llm_orchestration_expr(self, mock_create):
-        def mock_method(self, text: str):
+        def mock_method(text: str):
             """mock method"""
             return text
 
@@ -330,30 +336,12 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         action_handler.name_to_action["action2"] = actions[1]
         action_handler.name_to_action["action3"] = actions[2]
         action_handler.name_to_action["action4"] = actions[3]
-        instance_action_handler = action_handler.bind(None).build_orchestration_dict()
-        chat_completion = OpenAIChatCompletion(model="test")
-        chat_completion._bind_action_handlers(instance_action_handler)
+        chat_completion = OpenAIChatCompletion(model="test")._bind_action_handlers(
+            action_handler
+        )
 
         # Define the expected functions arguments and return values in the API call
         expected_functions_and_results = [
-            (
-                {
-                    "functions": ["action1", "action2", "action3"],
-                    "function_call": "auto",
-                },
-                self.generate_mock_function_call_response(
-                    "action1", '{\n  "text": "echo1"\n}'
-                ),
-            ),
-            (
-                {
-                    "functions": ["action1", "action2", "action3"],
-                    "function_call": "auto",
-                },
-                self.generate_mock_function_call_response(
-                    "action2", '{\n  "text": "echo2"\n}'
-                ),
-            ),
             (
                 {
                     "functions": ["action1", "action2", "action3"],
@@ -370,10 +358,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                 ),
             ),
             (
-                {
-                    "functions": ["action1", "action2", "action3"],
-                    "function_call": "auto",
-                },
+                {},
                 self.generate_mock_message_response("last message"),
             ),
         ]
@@ -395,37 +380,25 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         # Then
         # Use a loop to iterate over expected calls and assert function arguments in the API call
         for i, actual_call in enumerate(mock_create.call_args_list):
-            self.assertEqual(
-                [func["name"] for func in actual_call.kwargs["functions"]],
-                expected_functions_and_results[i][0]["functions"],
-            )
-            self.assertEqual(
-                actual_call.kwargs["function_call"],
-                expected_functions_and_results[i][0]["function_call"],
-            )
+            if "functions" in actual_call.kwargs:
+                self.assertEqual(
+                    [func["name"] for func in actual_call.kwargs["functions"]],
+                    expected_functions_and_results[i][0]["functions"],
+                )
+                self.assertEqual(
+                    actual_call.kwargs["function_call"],
+                    expected_functions_and_results[i][0]["function_call"],
+                )
+            else:
+                self.assertFalse("functions" in expected_functions_and_results[i][0])
+                self.assertFalse(
+                    "function_call" in expected_functions_and_results[i][0]
+                )
 
         self.assertEqual(
             messages,
             [
                 {"content": "Hi!", "role": "user"},
-                {
-                    "content": None,
-                    "function_call": {
-                        "arguments": '{\n  "text": "echo1"\n}',
-                        "name": "action1",
-                    },
-                    "role": "assistant",
-                },
-                {"content": "echo1", "name": "action1", "role": "function"},
-                {
-                    "content": None,
-                    "function_call": {
-                        "arguments": '{\n  "text": "echo2"\n}',
-                        "name": "action2",
-                    },
-                    "role": "assistant",
-                },
-                {"content": "echo2", "name": "action2", "role": "function"},
                 {
                     "content": None,
                     "function_call": {
@@ -444,7 +417,6 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                     "role": "assistant",
                 },
                 {"content": "echo4", "name": "action4", "role": "function"},
-                {"content": "last message", "role": "assistant"},
             ],
         )
         self.assertEqual(response, "last message")

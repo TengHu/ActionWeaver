@@ -85,6 +85,12 @@ class Action:
 
         self.decorated_method = decorated_obj
 
+        self.__module__ = self.decorated_method.__module__
+        self.__name__ = self.decorated_method.__name__
+        self.__qualname__ = self.decorated_method.__qualname__
+        self.__annotations__ = self.decorated_method.__annotations__
+        self.__doc__ = self.decorated_method.__doc__
+
     def build_pydantic_model_cls(self, models=None):
         if models is None:
             models = []
@@ -98,41 +104,80 @@ class Action:
         return self.pydantic_cls.model_json_schema()
 
     def bind(self, instance) -> InstanceAction:
-        return InstanceAction(self, instance)
+        return InstanceAction(
+            self.name,
+            self.decorated_method,
+            self.pydantic_cls,
+            self.scope,
+            self.orch_expr,
+            self.logger,
+            self.stop,
+            instance=instance,
+        )
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self.logger:
+            self.logger.debug(
+                {
+                    "message": f"[Action {self.name}, method {self.__name__}] Calling action: {self.name} with args: {args}"
+                }
+            )
+        response = self.decorated_method(*args, **kwargs)
+        if self.logger:
+            self.logger.debug(
+                {
+                    "message": f"[Action {self.name}, method {self.__name__}] Received response: {response}"
+                }
+            )
+        return response
 
     def __get__(self, instance, owner) -> InstanceAction:
         """
-        Bind a action with an instance.
 
         Note:
             The `__get__` method is a descriptor method that is called when the action is accessed from an instance.
             It returns an instance-specific action method that is bound to the given instance.
         """
-        return InstanceAction(self, instance)
+        return InstanceAction(
+            self.name,
+            self.decorated_method,
+            self.pydantic_cls,
+            self.scope,
+            self.orch_expr,
+            self.logger,
+            self.stop,
+            instance=instance,
+        )
 
 
-class InstanceAction:
-    def __init__(self, action, instance):
-        self.action = action
-        self.__module__ = action.decorated_method.__module__
-        self.__name__ = action.decorated_method.__name__
-        self.__qualname__ = action.decorated_method.__qualname__
-        self.__annotations__ = action.decorated_method.__annotations__
-        self.__doc__ = action.decorated_method.__doc__
+class InstanceAction(Action):
+    def __init__(
+        self,
+        name,
+        decorated_obj,
+        pydantic_cls,
+        scope=None,
+        orch_expr=None,
+        logger=None,
+        stop=False,
+        instance=None,
+    ):
+        super().__init__(name, decorated_obj, scope, orch_expr, logger, stop)
         self.instance = instance
+        self.pydantic_cls = pydantic_cls
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if self.action.logger:
-            self.action.logger.debug(
+        if self.logger:
+            self.logger.debug(
                 {
-                    "message": f"[Action {self.action.name}, method {self.__name__}] Calling action: {self.action.name} with args: {args}"
+                    "message": f"[Action {self.name}, method {self.__name__}] Calling action: {self.name} with args: {args}"
                 }
             )
-        response = self.action.decorated_method(self.instance, *args, **kwargs)
-        if self.action.logger:
-            self.action.logger.debug(
+        response = self.decorated_method(self.instance, *args, **kwargs)
+        if self.logger:
+            self.logger.debug(
                 {
-                    "message": f"[Action {self.action.name}, method {self.__name__}] Received response: {response}"
+                    "message": f"[Action {self.name}, method {self.__name__}] Received response: {response}"
                 }
             )
         return response
@@ -145,6 +190,12 @@ class ActionHandlers:
     def contains(self, name) -> bool:
         return name in self.name_to_action
 
+    @classmethod
+    def from_actions(cls, actions):
+        ret = cls()
+        ret.name_to_action = {action.name: action for action in actions}
+        return ret
+
     def __len__(self) -> int:
         return len(self.name_to_action)
 
@@ -154,10 +205,6 @@ class ActionHandlers:
             for name, action in self.name_to_action.items()
             if action.scope == scope
         }
-
-    # TODO
-    # def bind(self, instance) -> InstanceActionHandlers:
-    #     return InstanceActionHandlers(instance, self)
 
     def check_orchestration_expr_validity(self, expr):
         if expr is None:
@@ -178,23 +225,5 @@ class ActionHandlers:
             merged.name_to_action.update(handler.name_to_action)
         return merged
 
-
-# it does two thing, bind action to instance, build orchestration dict
-# class InstanceActionHandlers:
-#     def __init__(self, instance, action_handlers: ActionHandlers, *args, **kwargs):
-#         self.action_handlers = action_handlers
-#         self.instance = instance
-#         self.orch_dict = Orchestration()
-
-#     def __getitem__(self, key) -> InstanceAction:
-#         val = self.action_handlers.name_to_action[key]
-#         return val.bind(self.instance)
-
-#     def __len__(self) -> int:
-#         return len(self.action_handlers)
-
-#     def scope(self, scope):
-#         return self.action_handlers.scope(scope)
-
-#     def contains(self, name) -> bool:
-#         return self.action_handlers.contains(name)
+    def __getitem__(self, key) -> Action:
+        return self.name_to_action[key]

@@ -24,26 +24,58 @@ pip install actionweaver
 
 ## Quickstart
 
-Developers can construct an agent using OpenAI's LLM, and further enhance it using ActionWeaver's Action decorators. 
-For instance, to enable the `get_current_time` function below to be invoked by an LLM, simply decorate it with the `GetCurrentTime` action:
+Developers can attach **ANY** Python function in your OpenAI calls as a function to be invoked by the LLM with a simple decorator. In the following example, we introduce two actions, `GetCurrentTime` and `Sleep`, and then proceed to utilize the OpenAI API in conjunction with these corresponding functions.
+
+ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved.
 
 ```python
-import logging
-from typing import List
-from actionweaver import ActionHandlerMixin, action
-from actionweaver.llms.openai.chat import OpenAIChatCompletion
-from actionweaver.llms.openai.tokens import TokenUsageTracker
+@action(name="GetCurrentTime")
+def get_current_time() -> str:
+    """
+    Use this for getting the current time in the specified time zone.
+    
+    :return: A string representing the current time in the specified time zone.
+    """
+    import datetime
+    current_time = datetime.datetime.now()
+    
+    return f"The current time is {current_time}"
 
-logger = logging.getLogger(__name__)
 
+@action(name="Sleep")
+def sleep(seconds: int) -> str:
+    """
+    Introduces a sleep delay of the specified seconds and returns a message.
+
+    Args:
+        seconds (int): The duration to sleep in seconds.
+
+    Returns:
+        str: A message indicating the completion of the sleep.
+    """
+    import time
+    time.sleep(seconds)
+    return f"Now I wake up after sleep {seconds} seconds."
+
+chat = OpenAIChatCompletion("gpt-3.5-turbo", token_usage_tracker = TokenUsageTracker(budget=2000, logger=logger), logger=logger)
+chat.create([{"role": "user", "content": "what time is it now"}], actions = [sleep, get_current_time])
+```
+
+See **[example notebook](docs/source/notebooks/quickstart.ipynb)**
+
+##  Actions of Stateful Agent 
+
+Developers also have the option to create an agent class and enhance its functionality using ActionWeaver's `ActionHandlerMixin` and action decorators. These decorators allow actions to modify the state of the agent instance.
+
+```python
 class AgentV0(ActionHandlerMixin):
     def __init__(self, logger):
         self.logger = logger
         self.token_tracker = TokenUsageTracker(budget=None, logger=logger)
         self.llm = OpenAIChatCompletion("gpt-3.5-turbo", token_usage_tracker = self.token_tracker, logger=logger)
         
-        self.messages = [{"role": "system", "content": "You are a resourceful assistant."}]
-        self.buffer = [] 
+        self.messages = [{"role": "system", "content": "You are a resourceful assistant, able to inquire for more information if you cannot provide a confident answer to a question."}]
+        self.times = []
     
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
@@ -58,21 +90,20 @@ class AgentV0(ActionHandlerMixin):
         """
         import datetime
         current_time = datetime.datetime.now()
+
+        self.times += [str(current_time)]
         
         return f"The current time is {current_time}"
 
 agent = AgentV0(logger)
 ```
-ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved. 
-
 You can invoke actions just like regular instance methods
 ```python
 agent.get_current_time() # Output: 'The current time is 20:34.'
 ```
-You can also interact with the agent by asking questions, and the agent will dispatch the corresponding action using OpenAI functions
-```python
-agent("what time is it") # Output: 'The current time is 20:40:30.'
-```
+
+
+See **[example notebook](docs/source/notebooks/stateful_agent.ipynb)**
 
 ##  Grouping and Extending Actions Through Inheritance
 
