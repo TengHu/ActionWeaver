@@ -195,6 +195,9 @@ class OpenAIChatCompletion:
             else:
                 action_handler = self.action_handlers
 
+        for _, action in action_handler.name_to_action.items():
+            action_handler.check_orchestration_expr_validity(action.orch_expr)
+
         # Build orchestration
         orchestration_dict = build_orchestration_dict(action_handler)
 
