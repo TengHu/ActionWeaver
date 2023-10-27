@@ -1,7 +1,7 @@
-from actionweaver import ActionHandlerMixin, action
+from actionweaver import action
 
 
-class LangChainTools(ActionHandlerMixin):
+class LangChainTools:
     def verify_lib_installed(self):
         try:
             import langchain

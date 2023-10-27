@@ -68,7 +68,7 @@ See **[example notebook](docs/source/notebooks/quickstart.ipynb)**
 Developers also have the option to create an agent class and enhance its functionality using ActionWeaver's `ActionHandlerMixin` and action decorators. These decorators allow actions to modify the state of the agent instance.
 
 ```python
-class AgentV0(ActionHandlerMixin):
+class AgentV0:
     def __init__(self, logger):
         self.logger = logger
         self.token_tracker = TokenUsageTracker(budget=None, logger=logger)
@@ -79,7 +79,7 @@ class AgentV0(ActionHandlerMixin):
     
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.create(messages=self.messages)
+        return self.llm.create(messages=self.messages, actions = [self.get_current_time])
         
     @action(name="GetCurrentTime")
     def get_current_time(self) -> str:
@@ -113,7 +113,7 @@ In the example below, through inheritance, the new agent can utilize the Google 
 
 
 ```python
-class LangChainTools(ActionHandlerMixin):
+class LangChainTools:
     @action(name="GoogleSearch")
     def google_search(self, query: str) -> str:
         """
@@ -131,7 +131,9 @@ class LangChainTools(ActionHandlerMixin):
         return search.run(query)
     
 class AgentV1(AgentV0, LangChainTools):
-    pass
+    def __call__(self, text):
+        self.messages += [{"role": "user", "content":text}]
+        return self.llm.create(messages=self.messages, actions = [self.google_search, self.get_current_time])
 
 agent = AgentV1(logger)
 agent("what happened today")
@@ -162,7 +164,6 @@ Instead of overwhelming OpenAI with an extensive list of functions, we can desig
 
 - ListFiles with `file` scope.
 - ReadFile with `file` scope.
-
 
 
 ```python
@@ -212,8 +213,6 @@ class FileUtility(AgentV0):
         with open(file_path, 'r') as file:
             content = file.read()
         return f"The file content: \n{content}"
-
-agent = FileUtility(logger)
 ```
 
 ### Example: Chains of Actions
@@ -222,38 +221,6 @@ We can also force LLM to ask for current time after read a file by setting orche
 
 ```python
 class FileUtility(AgentV0):
-    @action(name="FileHandler", orch_expr = SelectOne(["FileHandler", "ListFiles", "ReadFile"]))
-    def handle_file(self, instruction: str) -> str:
-        """
-        Handles user instructions related to file operations. Put every context in the instruction only!
-    
-        Args:
-            instruction (str): The user's instruction about file handling.
-    
-        Returns:
-            str: The response to the user's question.
-        """
-        return instruction
-        
-
-    @action(name="ListFiles", scope="file")
-    def list_all_files_in_repo(self, repo_path: str ='.') -> List:
-        """
-        Lists all the files in the given repository.
-    
-        :param repo_path: Path to the repository. Defaults to the current directory.
-        :return: List of file paths.
-        """
-
-        logger.info(f"list_all_files_in_repo: {repo_path}")
-        
-        file_list = []
-        for root, _, files in os.walk(repo_path):
-            for file in files:
-                file_list.append(os.path.join(root, file))
-            break
-        return file_list
-
     @action(name="ReadFile", scope="file", orch_expr = RequireNext(["ReadFile", "GetCurrentTime"]))
     def read_from_file(self, file_path: str) -> str:
         """
