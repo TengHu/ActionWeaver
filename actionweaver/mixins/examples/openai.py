@@ -1,9 +1,9 @@
 import openai
 
-from actionweaver import ActionHandlerMixin, action
+from actionweaver import action
 
 
-class OpenAIAPI(ActionHandlerMixin):
+class OpenAIAPI:
     @action(name="GenerateImage")
     def generate_image(self, prompt: str) -> str:
         """

@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from actionweaver import ActionHandlerMixin, action
+from actionweaver import action
 
 
 class Place(BaseModel):
@@ -11,7 +11,7 @@ class Place(BaseModel):
     description: str
 
 
-class Folium(ActionHandlerMixin):
+class Folium:
     def verify_lib_installed(self):
         try:
             import folium
