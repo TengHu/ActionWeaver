@@ -3,15 +3,19 @@
 # ActionWeaver
 
 
-🪡 An framework for building LLM agents by providing the means for orchestrating and scaling external tools effectively.🪡
+🪡 A framework for building AI agents from orchestration, scaling, and advanced features of LLM function-calling capabilities. 🪡
 
 
 Features:
+- **Function Calling as First-Class Citizen**: Put function-calling at the core of the framework.
 - **Extensibility**: Easily integrate ANY Python code into your agent's toolbox with just a single line of code, or combining functions/tools from other ecosystems like LangChain or Llama Index.
 - **Function Orchestration**: Build complex orchestration of function callings. including intricate hierarchies or chains.
 - **Debuggability**: ActionWeaver adopts structured logging, making the developer experience more efficient.
 
-ActionWeaver's vision is to pioneer a new era in program development by seamlessly merging traditional programming techniques with the powerful reasoning capabilities of Language Model Models.
+
+ActionWeaver is an AI agent framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
+
+Our vision is to pioneer a new era in program development by seamlessly merging traditional programming techniques with the powerful reasoning capabilities of Language Model Models.
 
 **[More use cases and demos](docs/source/notebooks/use_cases.ipynb)**
 
@@ -237,6 +241,12 @@ class FileUtility(AgentV0):
 
 agent = FileUtility(logger)
 ```
+
+## Roadmap
+
+- support multiple action calling in one function.
+- support async function calling.
+- function server with open source language model.
 
 ## Contributing
 Contributions in the form of bug fixes, new features, documentation improvements, and pull requests are VERY welcomed.
