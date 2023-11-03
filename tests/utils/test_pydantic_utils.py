@@ -205,6 +205,94 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
+    def test_create_pydantic_model_from_func_with_override_params(self):
+        class Person(BaseModel):
+            first_name: str
+            last_name: str
+            age: int
+            email: str
+
+        class Persons(BaseModel):
+            persons: list[Person]
+
+        def foo():
+            pass
+
+        def bar():
+            pass
+
+        Foo = create_pydantic_model_from_func(
+            foo, "Foo", override_params={"a": (int, ...), "person": (Person, ...)}
+        )
+
+        self.assertEqual(
+            Foo.model_json_schema(),
+            {
+                "$defs": {
+                    "Person": {
+                        "properties": {
+                            "first_name": {"title": "First Name", "type": "string"},
+                            "last_name": {"title": "Last Name", "type": "string"},
+                            "age": {"title": "Age", "type": "integer"},
+                            "email": {"title": "Email", "type": "string"},
+                        },
+                        "required": ["first_name", "last_name", "age", "email"],
+                        "title": "Person",
+                        "type": "object",
+                    }
+                },
+                "properties": {
+                    "a": {"title": "A", "type": "integer"},
+                    "person": {"$ref": "#/$defs/Person"},
+                },
+                "required": ["a", "person"],
+                "title": "Foo",
+                "type": "object",
+            },
+        )
+
+        Bar = create_pydantic_model_from_func(
+            bar, "Bar", override_params={"a": (int, ...), "persons": (Persons, ...)}
+        )
+
+        self.assertEqual(
+            Bar.model_json_schema(),
+            {
+                "$defs": {
+                    "Person": {
+                        "properties": {
+                            "first_name": {"title": "First Name", "type": "string"},
+                            "last_name": {"title": "Last Name", "type": "string"},
+                            "age": {"title": "Age", "type": "integer"},
+                            "email": {"title": "Email", "type": "string"},
+                        },
+                        "required": ["first_name", "last_name", "age", "email"],
+                        "title": "Person",
+                        "type": "object",
+                    },
+                    "Persons": {
+                        "properties": {
+                            "persons": {
+                                "items": {"$ref": "#/$defs/Person"},
+                                "title": "Persons",
+                                "type": "array",
+                            }
+                        },
+                        "required": ["persons"],
+                        "title": "Persons",
+                        "type": "object",
+                    },
+                },
+                "properties": {
+                    "a": {"title": "A", "type": "integer"},
+                    "persons": {"$ref": "#/$defs/Persons"},
+                },
+                "required": ["a", "persons"],
+                "title": "Bar",
+                "type": "object",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

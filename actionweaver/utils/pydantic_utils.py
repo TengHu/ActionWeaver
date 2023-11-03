@@ -9,6 +9,7 @@ def create_pydantic_model_from_func(
     model_name: str,
     base_model: Type[BaseModel] = BaseModel,
     models=None,  # models: Optional pydantic models needed for the pydantic model from function signature
+    override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg.
 ):
     if models is None:
         models = []
@@ -60,11 +61,17 @@ def create_pydantic_model_from_func(
     """
 
     params = {}
-    models_dict = {model.__name__: model for model in models}
-    for param, default in zip(args, defaults):
-        annotation = annotations.get(param, Any)
-        annotation = models_dict.get(annotation, annotation)
-        params[param] = (annotation, default)
+
+    if override_params is None:
+        models_dict = {model.__name__: model for model in models}
+        for param, default in zip(args, defaults):
+            annotation = annotations.get(param, Any)
+            annotation = models_dict.get(annotation, annotation)
+            params[param] = (annotation, default)
+    else:
+        # use override_params instead
+        params = override_params
+        keyword_only_params = {}
 
     # Configure the class to allow extra parameters if **kwargs is in the function signature
     class Config:
