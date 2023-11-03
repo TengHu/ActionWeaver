@@ -92,12 +92,19 @@ class Action:
         self.__annotations__ = self.decorated_method.__annotations__
         self.__doc__ = self.decorated_method.__doc__
 
-    def build_pydantic_model_cls(self, models=None):
+    def build_pydantic_model_cls(
+        self,
+        models=None,
+        override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg of decorated method.
+    ):
         if models is None:
             models = []
 
         self.pydantic_cls = create_pydantic_model_from_func(
-            self.decorated_method, self.decorated_method.__name__.title(), models=models
+            self.decorated_method,
+            self.decorated_method.__name__.title(),
+            models=models,
+            override_params=override_params,
         )
         return self
 
