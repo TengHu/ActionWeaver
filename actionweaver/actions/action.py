@@ -104,7 +104,7 @@ class Action:
     def json_schema(self):
         return self.pydantic_cls.model_json_schema()
 
-    def invoke(self, chat, messages, stream=False):
+    def invoke(self, chat, messages, force=True, stream=False):
         assert len(messages) > 0, "Messages cannot be empty"
 
         if messages is None:
@@ -113,7 +113,7 @@ class Action:
         return chat.create(
             messages,
             actions=[self],
-            orch_expr=RequireNext([self.name]),
+            orch_expr=RequireNext([self.name]) if force else None,
             stream=stream,
         )
 
