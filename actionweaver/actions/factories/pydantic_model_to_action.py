@@ -1,9 +1,11 @@
 import types
+
 import uuid
 
 from pydantic import BaseModel
 
 from actionweaver.actions.action import Action, action
+
 
 
 def truncated_uuid4():
@@ -40,6 +42,7 @@ def from_model(
                     f"Failed to parse with the {model.__name__.lower()} model",
                     f"value: {value}",
                 )
+
 
     if name is None:
         name = f"Create{model.__name__}"

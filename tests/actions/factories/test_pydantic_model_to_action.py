@@ -34,10 +34,13 @@ class TestCase(unittest.TestCase):
             TestCase.Place(lat=23.0, lng=23.0, description="description"),
         )
 
+
         action = from_model(
             TestCase.Places, name="Func2", description="Extract Places model"
         )
+
         self.assertTrue("create_place" in action.decorated_method.__name__)
+
         self.assertEqual(action.name, "Func2")
         self.assertEqual(action.stop, True)
         self.assertEqual(action.description, "Extract Places model")
