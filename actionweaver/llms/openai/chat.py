@@ -35,13 +35,14 @@ class OpenAIChatCompletionException(Exception):
 
 
 class OpenAIChatCompletion:
-    def __init__(self, model, token_usage_tracker=None, logger=None):
+    def __init__(self, model, token_usage_tracker=None, logger=None, deployment_id=''):
         self.model = model
         self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
+        self.deployment_id = deployment_id
 
     def _bind_action_handlers(
         self, action_handlers: ActionHandlers
@@ -248,20 +249,39 @@ class OpenAIChatCompletion:
 
             function_argument = functions.to_arguments()
             if function_argument["functions"]:
-                api_response = openai.ChatCompletion.create(
-                    model=model,
-                    temperature=temperature,
-                    messages=messages,
-                    stream=stream,
-                    **function_argument,
-                )
+                if self.deployment_id != '':           
+                    api_response = openai.ChatCompletion.create(
+                        model=model,
+                        deployment_id=self.deployment_id,
+                        temperature=temperature,
+                        messages=messages,
+                        stream=stream,
+                        **function_argument,
+                    )
+                else:
+                    api_response = openai.ChatCompletion.create(
+                        model=model,
+                        temperature=temperature,
+                        messages=messages,
+                        stream=stream,
+                        **function_argument,
+                    )
             else:
-                api_response = openai.ChatCompletion.create(
-                    model=model,
-                    temperature=temperature,
-                    messages=messages,
-                    stream=stream,
-                )
+                if self.deployment_id != '':
+                    api_response = openai.ChatCompletion.create(
+                        model=model,
+                        deployment_id=self.deployment_id,
+                        temperature=temperature,
+                        messages=messages,
+                        stream=stream,
+                    )
+                else:
+                    api_response = openai.ChatCompletion.create(
+                        model=model,
+                        temperature=temperature,
+                        messages=messages,
+                        stream=stream,
+                    )
 
             # logic to handle streaming API response
             if is_generator(api_response):
