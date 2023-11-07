@@ -285,21 +285,29 @@ class OpenAIChatCompletion:
 
             # logic to handle streaming API response
             if is_generator(api_response):
-                first_element, iterator = get_first_element_and_iterator(api_response)
-
-                if "content" in first_element.choices[0]["delta"] and isinstance(
+                if self.deployment_id == '':
+                    first_element, iterator = get_first_element_and_iterator(api_response)
+                else:
+                    first_element,iterator = get_first_element_and_iterator(api_response,azure=True)
+                if first_element.choices and "content" in first_element.choices[0]["delta"] and isinstance(
                     first_element.choices[0]["delta"]["content"], str
                 ):
                     # if the first element is a message, return generator right away.
                     return iterator
-                elif "function_call" in first_element.choices[0]["delta"]:
+                elif first_element.choices and "role" in first_element.choices[0]["delta"] and isinstance(
+                    first_element.choices[0]["delta"]["role"], str
+                ):
+                    # if the first element is a message, return generator right away.
+                    return iterator
+                elif first_element.choices and "function_call" in first_element.choices[0]["delta"]:
                     # if the first element in generator is a function call, merge all the deltas.
                     l = list(iterator)
 
                     deltas = {}
                     for element in l:
-                        delta = element["choices"][0]["delta"].to_dict()
-                        deltas = merge_dicts(deltas, delta)
+                        if element["choices"] and element["choices"][0] and "delta" in element["choices"][0]:
+                            delta = element["choices"][0]["delta"].to_dict()
+                            deltas = merge_dicts(deltas, delta)
 
                     first_element["choices"][0]["message"] = deltas
                     first_element["choices"][0]["delta"] = deltas
@@ -321,7 +329,7 @@ class OpenAIChatCompletion:
                 }
             )
 
-            choice = api_response.choices[0]
+            choice = api_response.choices[1]
             message = choice["message"]
 
             if "function_call" in message and message["function_call"]:

@@ -8,11 +8,13 @@ def is_generator(obj):
     return inspect.isgeneratorfunction(obj) or inspect.isgenerator(obj)
 
 
-def get_first_element_and_iterator(iterator):
+def get_first_element_and_iterator(iterator,azure=False):
     # Create two copies of the iterator
     iter1, iter2 = tee(iterator, 2)
 
     first_element = next(iter1)
+    if azure:
+        first_element = next(iter1)
     return first_element, iter2
 
 
