@@ -7,8 +7,16 @@ import uuid
 from argparse import Action
 from typing import List
 
-import openai
-from openai.openai_object import OpenAIObject
+from openai import OpenAI, Stream
+from openai.types.chat.chat_completion_message import (
+    ChatCompletionMessage,
+    FunctionCall,
+)
+
+# Todo: Deprecated function_call in favor of tool_choice.
+
+
+client = OpenAI()
 
 from actionweaver.actions.action import ActionHandlers
 from actionweaver.actions.orchestration import (
@@ -23,11 +31,7 @@ from actionweaver.actions.orchestration_expr import (
 from actionweaver.llms.openai.functions import Functions
 from actionweaver.llms.openai.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
-from actionweaver.utils.stream import (
-    get_first_element_and_iterator,
-    is_generator,
-    merge_dicts,
-)
+from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
 
 
 class OpenAIChatCompletionException(Exception):
@@ -62,8 +66,8 @@ class OpenAIChatCompletion:
     ):
         """Invoke the function, update the messages, returns functions argument for the next OpenAI API call or halt the function loop and return the response."""
 
-        if isinstance(function_call, OpenAIObject):
-            function_call = function_call.to_dict()
+        if isinstance(function_call, FunctionCall):
+            function_call = function_call.model_dump()
 
         messages += [
             {
@@ -248,7 +252,7 @@ class OpenAIChatCompletion:
 
             function_argument = functions.to_arguments()
             if function_argument["functions"]:
-                api_response = openai.ChatCompletion.create(
+                api_response = client.chat.completions.create(
                     model=model,
                     temperature=temperature,
                     messages=messages,
@@ -256,7 +260,7 @@ class OpenAIChatCompletion:
                     **function_argument,
                 )
             else:
-                api_response = openai.ChatCompletion.create(
+                api_response = client.chat.completions.create(
                     model=model,
                     temperature=temperature,
                     messages=messages,
@@ -264,27 +268,27 @@ class OpenAIChatCompletion:
                 )
 
             # logic to handle streaming API response
-            if is_generator(api_response):
+            if isinstance(api_response, Stream):
                 first_element, iterator = get_first_element_and_iterator(api_response)
 
-                if "content" in first_element.choices[0]["delta"] and isinstance(
-                    first_element.choices[0]["delta"]["content"], str
-                ):
+                if first_element.choices[0].delta.content is not None:
                     # if the first element is a message, return generator right away.
                     return iterator
-                elif "function_call" in first_element.choices[0]["delta"]:
+                elif first_element.choices[0].delta.function_call:
                     # if the first element in generator is a function call, merge all the deltas.
                     l = list(iterator)
 
                     deltas = {}
                     for element in l:
-                        delta = element["choices"][0]["delta"].to_dict()
+                        delta = element.choices[0].delta.model_dump()
                         deltas = merge_dicts(deltas, delta)
 
-                    first_element["choices"][0]["message"] = deltas
-                    first_element["choices"][0]["delta"] = deltas
+                    first_element.choices[0].message = ChatCompletionMessage(**deltas)
                     api_response = first_element
                 else:
+                    import pdb
+
+                    pdb.set_trace()
                     raise OpenAIChatCompletionException(
                         f"Unsupported response from streaming API: {list(iterator)}"
                     )
@@ -302,14 +306,14 @@ class OpenAIChatCompletion:
             )
 
             choice = api_response.choices[0]
-            message = choice["message"]
+            message = choice.message
 
-            if "function_call" in message and message["function_call"]:
+            if message.function_call:
                 functions, (stop, resp) = self._invoke_function(
                     call_id,
                     messages,
                     model,
-                    message["function_call"],
+                    message.function_call,
                     orchestration_dict,
                     default_expr,
                     action_handler,
@@ -317,12 +321,12 @@ class OpenAIChatCompletion:
                 )
                 if stop:
                     return resp
-            elif "content" in message and message["content"]:
-                response = message["content"]
+            elif message.content is not None:
+                response = message.content
 
                 # ignore last message in the function loop
                 # messages += [{"role": "assistant", "content": message["content"]}]
-                if choice["finish_reason"] == "stop":
+                if choice.finish_reason == "stop":
                     """
                     Stop Reasons:
 
