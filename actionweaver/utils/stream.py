@@ -1,11 +1,7 @@
 import inspect
 from itertools import tee
 
-from openai.openai_object import OpenAIObject
-
-
-def is_generator(obj):
-    return inspect.isgeneratorfunction(obj) or inspect.isgenerator(obj)
+from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 
 def get_first_element_and_iterator(iterator):
@@ -20,8 +16,11 @@ def merge_dicts(dict1, dict2):
     merged_dict = dict1.copy()
     for key, value in dict2.items():
         if key in merged_dict:
-            if isinstance(value, OpenAIObject):
-                value = value.to_dict()
+            if value is None:
+                continue
+
+            if isinstance(value, ChatCompletionChunk):
+                value = value.model_dump()
 
             if type(value) == dict:
                 merged_dict[key] = merge_dicts(merged_dict[key], value)

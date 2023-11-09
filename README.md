@@ -69,7 +69,7 @@ See **[example notebook](docs/source/notebooks/quickstart.ipynb)**
 
 ##  Actions of Stateful Agent 
 
-Developers also have the option to create an agent class and enhance its functionality using ActionWeaver's `ActionHandlerMixin` and action decorators. These decorators allow actions to modify the state of the agent instance.
+Developers also have the option to create an agent class and enhance its functionality using ActionWeaver's action decorators. These decorators allow actions to modify the state of the agent instance.
 
 ```python
 class AgentV0:

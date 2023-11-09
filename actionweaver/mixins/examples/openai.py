@@ -1,4 +1,6 @@
-import openai
+from openai import OpenAI
+
+client = OpenAI()
 
 from actionweaver import action
 
@@ -17,7 +19,7 @@ class OpenAIAPI:
         """
         from IPython.display import Image, display
 
-        response = openai.Image.create(prompt=prompt, n=1, size="1024x1024")
+        response = client.images.generate(prompt=prompt, n=1, size="1024x1024")
 
         url = response.data[0].url
         display(Image(url=url))

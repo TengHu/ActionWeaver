@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from openai.openai_object import OpenAIObject
+from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
 
@@ -16,64 +16,70 @@ class StreamUtilsTestCase(unittest.TestCase):
         self.assertEqual(first_element, 3)
         self.assertEqual(list(iter2), list(range(3, 10)))
 
+    # Todo: test merging function calling and tool calls streams.
     def test_merge_dicts(self):
         streams = [
-            OpenAIObject.construct_from(
-                {
-                    "id": "chatcmpl-7uPkC4A9XVJEyQW3drBGhmOWmFsZ0",
-                    "object": "chat.completion.chunk",
-                    "created": 1693679684,
-                    "model": "gpt-3.5-turbo-0613",
+            ChatCompletionChunk(
+                **{
+                    "id": "chatcmpl-8Izk9ayIEYUKWLhGmdpBqJOomrdpR",
                     "choices": [
-                        OpenAIObject.construct_from(
-                            {
-                                "index": 0,
-                                "delta": {
-                                    "role": "assistant",
-                                    "content": None,
-                                    "function_call": {
-                                        "name": "GetCurrentTime",
-                                        "arguments": "",
-                                    },
-                                },
-                                "finish_reason": None,
-                            }
-                        )
+                        {
+                            "delta": {
+                                "content": "Hello",
+                                "function_call": None,
+                                "role": None,
+                                "tool_calls": None,
+                            },
+                            "finish_reason": None,
+                            "index": 0,
+                        }
                     ],
+                    "created": 1699537937,
+                    "model": "gpt-3.5-turbo-0613",
+                    "object": "chat.completion.chunk",
+                    "system_fingerprint": None,
                 }
             ),
-            OpenAIObject.construct_from(
-                {
-                    "id": "chatcmpl-7uPkC4A9XVJEyQW3drBGhmOWmFsZ0",
-                    "object": "chat.completion.chunk",
-                    "created": 1693679684,
-                    "model": "gpt-3.5-turbo-0613",
+            ChatCompletionChunk(
+                **{
+                    "id": "chatcmpl-8Izk9ayIEYUKWLhGmdpBqJOomrdpR",
                     "choices": [
-                        OpenAIObject.construct_from(
-                            {
-                                "index": 0,
-                                "delta": {"function_call": {"arguments": "{\n\n"}},
-                                "finish_reason": None,
-                            }
-                        )
+                        {
+                            "delta": {
+                                "content": "!",
+                                "function_call": None,
+                                "role": None,
+                                "tool_calls": None,
+                            },
+                            "finish_reason": None,
+                            "index": 0,
+                        }
                     ],
+                    "created": 1699537937,
+                    "model": "gpt-3.5-turbo-0613",
+                    "object": "chat.completion.chunk",
+                    "system_fingerprint": None,
                 }
             ),
-            OpenAIObject.construct_from(
-                {
-                    "id": "chatcmpl-7uPkC4A9XVJEyQW3drBGhmOWmFsZ0",
-                    "object": "chat.completion.chunk",
-                    "created": 1693679684,
-                    "model": "gpt-3.5-turbo-0613",
+            ChatCompletionChunk(
+                **{
+                    "id": "chatcmpl-8Izk9ayIEYUKWLhGmdpBqJOomrdpR",
                     "choices": [
-                        OpenAIObject.construct_from(
-                            {
-                                "index": 0,
-                                "delta": {"function_call": {"arguments": "}"}},
-                                "finish_reason": None,
-                            }
-                        ),
+                        {
+                            "delta": {
+                                "content": " How",
+                                "function_call": None,
+                                "role": None,
+                                "tool_calls": None,
+                            },
+                            "finish_reason": None,
+                            "index": 0,
+                        }
                     ],
+                    "created": 1699537937,
+                    "model": "gpt-3.5-turbo-0613",
+                    "object": "chat.completion.chunk",
+                    "system_fingerprint": None,
                 }
             ),
         ]
@@ -83,16 +89,18 @@ class StreamUtilsTestCase(unittest.TestCase):
         l = list(gen)
 
         ret = {}
+
         for element in l:
-            delta = element["choices"][0]["delta"].to_dict()
+            delta = element.choices[0].delta.model_dump()
             ret = merge_dicts(ret, delta)
 
         self.assertEqual(
             ret,
             {
-                "role": "assistant",
-                "content": None,
-                "function_call": {"name": "GetCurrentTime", "arguments": "{\n\n}"},
+                "content": "Hello! How",
+                "function_call": None,
+                "role": None,
+                "tool_calls": None,
             },
         )
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import Mock, call, patch
 
-from openai.openai_object import OpenAIObject
+from openai.types.chat.chat_completion import ChatCompletion
 
 from actionweaver.actions import Action, ActionHandlers
 from actionweaver.actions.orchestration_expr import RequireNext, SelectOne
@@ -12,46 +12,65 @@ from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
 class TestOpenAIChatCompletion(unittest.TestCase):
     def generate_mock_function_call_response(self, name, arguments):
-        mock_response = OpenAIObject()
-        mock_response.choices = [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "function_call": OpenAIObject.construct_from(
-                        {
-                            "name": name,
-                            "arguments": arguments,
-                        }
-                    ),
+        return ChatCompletion(
+            **{
+                "id": "chatcmpl-8J02pR3nTveTRRgDsAP94HpG2pyi9",
+                "choices": [
+                    {
+                        "finish_reason": "function_call",
+                        "index": 0,
+                        "message": {
+                            "content": None,
+                            "role": "assistant",
+                            "function_call": {
+                                "arguments": arguments,
+                                "name": name,
+                            },
+                            "tool_calls": None,
+                        },
+                    }
+                ],
+                "created": 1699539095,
+                "model": "gpt-3.5-turbo-0613",
+                "object": "chat.completion",
+                "system_fingerprint": None,
+                "usage": {
+                    "completion_tokens": 18,
+                    "prompt_tokens": 83,
+                    "total_tokens": 101,
                 },
-                "finish_reason": "function_call",
             }
-        ]
-        mock_response.usage = {
-            "prompt_tokens": 1413,
-            "completion_tokens": 118,
-            "total_tokens": 1531,
-        }
-        return mock_response
+        )
 
     def generate_mock_message_response(self, content):
-        mock_response = OpenAIObject()
-        mock_response.choices = [
-            {
-                "index": 0,
-                "message": {"role": "assistant", "content": content},
-                "finish_reason": "stop",
+        return ChatCompletion(
+            **{
+                "id": "chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "message": {
+                            "content": content,
+                            "role": "assistant",
+                            "function_call": None,
+                            "tool_calls": None,
+                        },
+                    }
+                ],
+                "created": 1699538461,
+                "model": "gpt-3.5-turbo-0613",
+                "object": "chat.completion",
+                "system_fingerprint": None,
+                "usage": {
+                    "completion_tokens": 9,
+                    "prompt_tokens": 19,
+                    "total_tokens": 28,
+                },
             }
-        ]
-        mock_response.usage = {
-            "prompt_tokens": 1413,
-            "completion_tokens": 118,
-            "total_tokens": 1531,
-        }
-        return mock_response
+        )
 
-    @patch("openai.ChatCompletion.create")
+    @patch("openai.resources.chat.Completions.create")
     def test_create_message(self, mock_create):
         # Create an instance of OpenAIChatCompletion
         chat_completion = OpenAIChatCompletion(model="test")
@@ -85,7 +104,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         )
         self.assertEqual(response, "Hello! what can I do for you")
 
-    @patch("openai.ChatCompletion.create")
+    @patch("openai.resources.chat.Completions.create")
     def test_create_with_functions1(self, mock_create):
         def mock_method(text: str):
             """mock method"""
@@ -159,7 +178,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         )
         self.assertEqual(response, "last message")
 
-    @patch("openai.ChatCompletion.create")
+    @patch("openai.resources.chat.Completions.create")
     def test_create_with_functions2(self, mock_create):
         def mock_method(text: str):
             """mock method"""
@@ -305,7 +324,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         )
         self.assertEqual(response, "last message")
 
-    @patch("openai.ChatCompletion.create")
+    @patch("openai.resources.chat.Completions.create")
     def test_create_with_llm_orchestration_expr(self, mock_create):
         def mock_method(text: str):
             """mock method"""
