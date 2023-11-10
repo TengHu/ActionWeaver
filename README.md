@@ -2,8 +2,7 @@
 
 # ActionWeaver
 
-
-🪡 A framework for building AI agents from orchestration, scaling, and advanced features of LLM function-calling capabilities. 🪡
+🪡 **We believe function-calling should be a first-class citizen in the world of AI agents, and this framework aims to be the top open-source framework that really gets that right.** 🪡
 
 
 Features:
