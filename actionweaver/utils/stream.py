@@ -3,6 +3,14 @@ from itertools import tee
 
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
+def get_first_and_second_element(iterator):
+    # Create two copies of the iterator
+    iter1, iter2 = tee(iterator, 2)
+
+    first_element = next(iter1)
+    second_element = next(iter1)
+
+    return first_element, second_element, iter2
 
 def get_first_element_and_iterator(iterator):
     # Create two copies of the iterator

@@ -30,7 +30,7 @@ from actionweaver.actions.orchestration_expr import (
 from actionweaver.llms.openai.functions import Functions
 from actionweaver.llms.openai.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
-from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
+from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts, get_first_and_second_element
 
 
 class OpenAIChatCompletionException(Exception):
@@ -82,8 +82,8 @@ class OpenAIChatCompletion:
     ):
         """Invoke the function, update the messages, returns functions argument for the next OpenAI API call or halt the function loop and return the response."""
 
-        if isinstance(function_call, FunctionCall):
-            function_call = function_call.model_dump()
+        #if isinstance(function_call, FunctionCall):
+        function_call = function_call.model_dump()
 
         messages += [
             {
@@ -98,7 +98,9 @@ class OpenAIChatCompletion:
 
         if action_handler.contains(name):
             try:
-                arguments = json.loads(function_call["arguments"])
+                import pdb 
+                pdb.set_trace()
+                arguments = json.loads(function_call["arguments"]) if function_call["arguments"] else {}
             except json.decoder.JSONDecodeError as e:
                 self.logger.error(
                     {
@@ -276,6 +278,8 @@ class OpenAIChatCompletion:
                     **function_argument,
                 )
             else:
+                import pdb 
+                pdb.set_trace()
                 api_response = self.client.chat.completions.create(
                     model=model,
                     temperature=temperature,
@@ -311,22 +315,11 @@ class OpenAIChatCompletion:
                         )
                 if self.deployment_id != '':
                     print(api_response)
-                    iterator = api_response
-                    # Create two copies of the iterator
-                    iter1, iter2 = tee(iterator, 2)
-                    first_element = next(iter1)
-                    second_element = next(iter1)
-                    print('first_element')
-                    print(first_element)
-                    print('second_element')
-                    print(second_element)
-                    print('==========')
-                    print('========')
-                    for i,chunk in enumerate(api_response):
-                        print(f'chunk{i}')
-                        print(chunk)
-                        print('-----')
-                    api_response = second_element
+                    first_element, second_element, iterator = get_first_and_second_element(api_response)
+                    if len(first_element.choices) > 0:
+                        api_response = first_element
+                    else:
+                        api_response = second_element
                     
             else:
                 self.token_usage_tracker.track_usage(api_response.usage)
@@ -341,7 +334,11 @@ class OpenAIChatCompletion:
             )
 
             choice = api_response.choices[0]
-            message = choice.message
+            message = None
+            if self.deployment_id != '':
+                message = choice.delta
+            else:
+                message = choice.message
 
             if message.function_call:
                 functions, (stop, resp) = self._invoke_function(
