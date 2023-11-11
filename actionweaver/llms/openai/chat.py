@@ -6,6 +6,7 @@ import time
 import uuid
 from argparse import Action
 from typing import List
+from itertools import tee
 
 from openai import OpenAI, Stream, AzureOpenAI
 from openai.types.chat.chat_completion_message import (
@@ -284,30 +285,49 @@ class OpenAIChatCompletion:
 
             # logic to handle streaming API response
             if isinstance(api_response, Stream):
-                first_element, iterator = get_first_element_and_iterator(api_response)
+                if self.deployment_id == '':
+                    first_element, iterator = get_first_element_and_iterator(api_response)
 
-                if first_element.choices[0].delta.content is not None:
-                    # if the first element is a message, return generator right away.
-                    return iterator
-                elif first_element.choices[0].delta.function_call:
-                    # if the first element in generator is a function call, merge all the deltas.
-                    l = list(iterator)
+                    if first_element.choices[0].delta.content is not None:
+                        # if the first element is a message, return generator right away.
+                        return iterator
+                    elif first_element.choices[0].delta.function_call:
+                        # if the first element in generator is a function call, merge all the deltas.
+                        l = list(iterator)
 
-                    deltas = {}
-                    for element in l:
-                        delta = element.choices[0].delta.model_dump()
-                        deltas = merge_dicts(deltas, delta)
+                        deltas = {}
+                        for element in l:
+                            delta = element.choices[0].delta.model_dump()
+                            deltas = merge_dicts(deltas, delta)
 
-                    first_element.choices[0].message = ChatCompletionMessage(**deltas)
-                    api_response = first_element
-                else:
-                    import pdb
+                        first_element.choices[0].message = ChatCompletionMessage(**deltas)
+                        api_response = first_element
+                    else:
+                        import pdb
 
-                    pdb.set_trace()
-                    raise OpenAIChatCompletionException(
-                        f"Unsupported response from streaming API: {list(iterator)}"
-                    )
-
+                        pdb.set_trace()
+                        raise OpenAIChatCompletionException(
+                            f"Unsupported response from streaming API: {list(iterator)}"
+                        )
+                if self.deployment_id != '':
+                    print(api_response)
+                    iterator = api_response
+                    # Create two copies of the iterator
+                    iter1, iter2 = tee(iterator, 2)
+                    first_element = next(iter1)
+                    second_element = next(iter1)
+                    print('first_element')
+                    print(first_element)
+                    print('second_element')
+                    print(second_element)
+                    print('==========')
+                    print('========')
+                    for i,chunk in enumerate(api_response):
+                        print(f'chunk{i}')
+                        print(chunk)
+                        print('-----')
+                    api_response = second_element
+                    
             else:
                 self.token_usage_tracker.track_usage(api_response.usage)
 
