@@ -7,7 +7,7 @@ import uuid
 from argparse import Action
 from typing import List
 
-from openai import OpenAI, Stream
+from openai import OpenAI, Stream, AzureOpenAI
 from openai.types.chat.chat_completion_message import (
     ChatCompletionMessage,
     FunctionCall,
@@ -15,8 +15,6 @@ from openai.types.chat.chat_completion_message import (
 
 # Todo: Deprecated function_call in favor of tool_choice.
 
-
-client = OpenAI()
 
 from actionweaver.actions.action import ActionHandlers
 from actionweaver.actions.orchestration import (
@@ -39,14 +37,31 @@ class OpenAIChatCompletionException(Exception):
 
 
 class OpenAIChatCompletion:
-    def __init__(self, model, token_usage_tracker=None, logger=None):
+    def __init__(self, model, token_usage_tracker=None, logger=None, deployment_id='', api_version='',api_base='',api_key=''):
         self.model = model
         self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
-
+        self.deployment_id = deployment_id
+        self.api_version = api_version
+        self.api_base = api_base
+        self.api_key = api_key
+        self.client = None
+        if self.deployment_id == '':
+            if self.api_key == '':
+                self.client = OpenAI()
+            else:
+                self.client = OpenAI(api_key=self.api_key)
+        else:
+            print("AZURE")
+            self.client = AzureOpenAI(
+                api_key=self.api_key,
+                api_version=self.api_version,
+                azure_deployment=self.deployment_id,
+                azure_endpoint=self.api_base
+            )
     def _bind_action_handlers(
         self, action_handlers: ActionHandlers
     ) -> OpenAIChatCompletion:
@@ -252,7 +267,7 @@ class OpenAIChatCompletion:
 
             function_argument = functions.to_arguments()
             if function_argument["functions"]:
-                api_response = client.chat.completions.create(
+                api_response = self.client.chat.completions.create(
                     model=model,
                     temperature=temperature,
                     messages=messages,
@@ -260,7 +275,7 @@ class OpenAIChatCompletion:
                     **function_argument,
                 )
             else:
-                api_response = client.chat.completions.create(
+                api_response = self.client.chat.completions.create(
                     model=model,
                     temperature=temperature,
                     messages=messages,
