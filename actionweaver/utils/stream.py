@@ -1,4 +1,3 @@
-import inspect
 from itertools import tee
 
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
