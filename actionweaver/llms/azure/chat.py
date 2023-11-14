@@ -24,8 +24,8 @@ from actionweaver.actions.orchestration_expr import (
     _ActionDefault,
     _ActionHandlerLLMInvoke,
 )
-from actionweaver.llms.openai.functions import Functions
-from actionweaver.llms.openai.tokens import TokenUsageTracker
+from actionweaver.llms.azure.functions import Functions
+from actionweaver.llms.azure.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
 
