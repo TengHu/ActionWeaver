@@ -45,15 +45,24 @@ class ChatCompletion:
         api_version,
         token_usage_tracker=None,
         logger=None,
+        azure_deployment="",
     ):
         self.model = model
         self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
-        self.client = AzureOpenAI(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
-            api_version=api_version,
-        )
+        if azure_deployment == "":
+            self.client = AzureOpenAI(
+                azure_endpoint=azure_endpoint,
+                api_key=api_key,
+                api_version=api_version
+            )
+        else:
+            self.client = AzureOpenAI(
+                azure_endpoint=azure_endpoint,
+                api_key=api_key,
+                api_version=api_version,
+                azure_deployment=azure_deployment
+            )
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
