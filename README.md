@@ -1,20 +1,24 @@
-<img src="docs/figures/scale_tools.png">
 
 # ActionWeaver
 
-🪡 **We believe function-calling should be a first-class citizen in the world of AI agents, and this framework aims to be the top open-source framework that really gets that right.** 🪡
+🪡 AI application framework that puts function-calling as a first-class feature 🪡
 
+Supporting both OpenAI API and Azure OpenAI service!
+
+---
+
+[Star us on Github!](https://github.com/TengHu/ActionWeaver)
+
+ActionWeaver is an AI application framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
+
+Our vision is to enable seamlessly merging traditional computing systems with the powerful reasoning capabilities of Language Model Models.
 
 Features:
 - **Function Calling as First-Class Citizen**: Put function-calling at the core of the framework.
-- **Extensibility**: Easily integrate ANY Python code into your agent's toolbox with just a single line of code, or combining functions/tools from other ecosystems like LangChain or Llama Index.
+- **Extensibility**: Integrate ANY Python code into your agent's toolbox with a single line of code, or combining tools from other ecosystems like LangChain or Llama Index.
 - **Function Orchestration**: Build complex orchestration of function callings. including intricate hierarchies or chains.
-- **Debuggability**: ActionWeaver adopts structured logging, making the developer experience more efficient.
+- **Debuggability**: structured logging improves the developer experience.
 
-
-ActionWeaver is an AI agent framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
-
-Our vision is to pioneer a new era in program development by seamlessly merging traditional programming techniques with the powerful reasoning capabilities of Language Model Models.
 
 **[More use cases and demos](docs/source/notebooks/use_cases.ipynb)**
 
@@ -26,8 +30,25 @@ pip install actionweaver
 ```
 
 ## Quickstart
+Using OpenAI's API to initialize a chat completion model
+```python
+from actionweaver.llms.openai.chat import OpenAIChatCompletion
 
-Developers can attach **ANY** Python function in your OpenAI calls as a function to be invoked by the LLM with a simple decorator. In the following example, we introduce two actions, `GetCurrentTime` and `Sleep`, and then proceed to utilize the OpenAI API in conjunction with these corresponding functions.
+chat = OpenAIChatCompletion("gpt-3.5-turbo")
+``` 
+or using Azure OpenAI service to start a chat completion model
+```python
+from actionweaver.llms.azure.chat import ChatCompletion
+
+chat = ChatCompletion(
+    model=YOUR_MODEL, 
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
+    api_key=os.getenv("AZURE_OPENAI_KEY"),  
+    api_version="2023-10-01-preview")
+```
+
+### Add ANY Python function as a tool to the Large Language Model.
+Developers can attach **ANY** Python function as a tool with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
 
 ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved.
 
@@ -44,40 +65,41 @@ def get_current_time() -> str:
     
     return f"The current time is {current_time}"
 
+# Ask LLM what time is it
+chat.create([{"role": "user", "content": "what time is it now"}], actions = [get_current_time])
+```
 
-@action(name="Sleep")
-def sleep(seconds: int) -> str:
-    """
-    Introduces a sleep delay of the specified seconds and returns a message.
+### Force execution of an action
+You can also force the language model to execute the action. 
+```python 
+get_current_time.invoke(chat, [{"role": "user", "content": "what time is it now"}])
+```
 
-    Args:
-        seconds (int): The duration to sleep in seconds.
+### Structured extraction
+You can create a Pydantic model to define the structure of the data you want to extract, and then force the language model to extract structured data from information in the prompt.
 
-    Returns:
-        str: A message indicating the completion of the sleep.
-    """
-    import time
-    time.sleep(seconds)
-    return f"Now I wake up after sleep {seconds} seconds."
+```python
+from pydantic import BaseModel
+from actionweaver.actions.factories.pydantic_model_to_action import action_from_model
 
-chat = OpenAIChatCompletion("gpt-3.5-turbo", token_usage_tracker = TokenUsageTracker(budget=2000, logger=logger), logger=logger)
-chat.create([{"role": "user", "content": "what time is it now"}], actions = [sleep, get_current_time])
+class User(BaseModel):
+    name: str
+    age: int
+
+action_from_model(User).invoke(chat, [{"role": "user", "content": "Tom is 31 years old"}])
 ```
 
 See **[example notebook](docs/source/notebooks/quickstart.ipynb)**
 
 ##  Actions of Stateful Agent 
 
-Developers also have the option to create an agent class and enhance its functionality using ActionWeaver's action decorators. These decorators allow actions to modify the state of the agent instance.
+Developers also could create a class and enhance its functionality using ActionWeaver's action decorators.
 
 ```python
 class AgentV0:
-    def __init__(self, logger):
-        self.logger = logger
-        self.token_tracker = TokenUsageTracker(budget=None, logger=logger)
-        self.llm = OpenAIChatCompletion("gpt-3.5-turbo", token_usage_tracker = self.token_tracker, logger=logger)
-        
-        self.messages = [{"role": "system", "content": "You are a resourceful assistant, able to inquire for more information if you cannot provide a confident answer to a question."}]
+    def __init__(self):
+        self.llm = OpenAIChatCompletion("gpt-3.5-turbo")
+        self.messages = []
         self.times = []
     
     def __call__(self, text):
@@ -98,23 +120,21 @@ class AgentV0:
         
         return f"The current time is {current_time}"
 
-agent = AgentV0(logger)
-```
-You can invoke actions just like regular instance methods
-```python
+agent = AgentV0()
+
+agent("what time is it") # Output: 'The current time is 20:34.'
+
+# You can invoke actions just like regular instance methods
 agent.get_current_time() # Output: 'The current time is 20:34.'
 ```
-
 
 See **[example notebook](docs/source/notebooks/stateful_agent.ipynb)**
 
 ##  Grouping and Extending Actions Through Inheritance
 
-In this example, we wrap the [LangChain Google search](https://python.langchain.com/docs/integrations/tools/google_search) as a method, creating a powerful and extensible design pattern. By defining a new agent that inherits from the previous agent and LangChainTools, the new agent will inherit actions from both classes. This approach leverages object-oriented principles to enable rapid development and easy expansion of the agent's capabilities.
+In this example, we wrap the [LangChain Google search](https://python.langchain.com/docs/integrations/tools/google_search) as a method, and define a new agent that inherits the previous agent and LangChain search tool. This approach leverages object-oriented principles to enable rapid development and easy expansion of the agent's capabilities.
 
-In the example below, through inheritance, the new agent can utilize the Google search tool method as well as any other actions defined in the parent classes. This structure makes it simple to build upon existing code.
-
-
+In the example below, through inheritance, the new agent can utilize the Google search tool method as well as any other actions defined in the parent classes.
 ```python
 class LangChainTools:
     @action(name="GoogleSearch")
@@ -138,7 +158,7 @@ class AgentV1(AgentV0, LangChainTools):
         self.messages += [{"role": "user", "content":text}]
         return self.llm.create(messages=self.messages, actions = [self.google_search, self.get_current_time])
 
-agent = AgentV1(logger)
+agent = AgentV1()
 agent("what happened today")
 
 """
@@ -146,7 +166,7 @@ Output: Here are some events that happened or are scheduled for today (August 23
 """
 ```
 
-## Orchestration of Actions
+## Orchestration of Actions (Experimental)
 
 ActionWeaver enables the design of hierarchies and chains of actions with following features:
 
