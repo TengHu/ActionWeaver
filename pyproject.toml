@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "actionweaver"
-version = "0.0.14"
+version = "0.0.15"
 description = "An Application Framework for Building LLM Agents"
 authors = ['Teng "Niel" Hu <hu.niel92@gmail.com>']
 readme = "README.md"
