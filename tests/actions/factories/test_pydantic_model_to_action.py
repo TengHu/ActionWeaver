@@ -5,7 +5,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from actionweaver.actions.factories.pydantic_model_to_action import from_model
+from actionweaver.actions.factories.pydantic_model_to_action import action_from_model
 
 
 class TestCase(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestCase(unittest.TestCase):
         places: List[TestCase.Place]
 
     def test_from_pydantic_model(self):
-        action = from_model(
+        action = action_from_model(
             TestCase.Place, name="Func1", description="Extract Place model"
         )
         self.assertTrue("create_place" in action.decorated_method.__name__)
@@ -34,8 +34,7 @@ class TestCase(unittest.TestCase):
             TestCase.Place(lat=23.0, lng=23.0, description="description"),
         )
 
-
-        action = from_model(
+        action = action_from_model(
             TestCase.Places, name="Func2", description="Extract Places model"
         )
 
