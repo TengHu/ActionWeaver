@@ -3,7 +3,7 @@
 
 🪡 AI application framework that puts function-calling as a first-class feature 🪡
 
-Supporting both OpenAI API and Azure OpenAI service!
+**Supporting both OpenAI API and Azure OpenAI service!**
 
 ---
 
