@@ -263,7 +263,7 @@ agent = FileUtility(logger)
 
 ## Roadmap
 
-- support multiple action calling in one function.
+- support parallel function calling.
 - support async function calling.
 - function server with open source language model.
 
