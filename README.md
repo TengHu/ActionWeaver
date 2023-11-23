@@ -128,7 +128,11 @@ agent("what time is it") # Output: 'The current time is 20:34.'
 agent.get_current_time() # Output: 'The current time is 20:34.'
 ```
 
-See **[example notebook](docs/source/notebooks/stateful_agent.ipynb)**
+See **[Simple agent](docs/source/notebooks/stateful_agent.ipynb)**
+
+See **[ReAct/Multi-Step Planning agent](docs/source/notebooks/planning_agent.ipynb)**
+
+
 
 ##  Grouping and Extending Actions Through Inheritance
 
