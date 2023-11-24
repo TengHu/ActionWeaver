@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import inspect
 import json
 import logging
 import time
 import uuid
 from argparse import Action
-from itertools import chain
 from typing import List
 
-from openai import AzureOpenAI, Stream
+from openai import OpenAI, Stream
 from openai.types.chat.chat_completion_message import (
     ChatCompletionMessage,
     FunctionCall,
@@ -17,6 +15,7 @@ from openai.types.chat.chat_completion_message import (
 
 from actionweaver.actions.action import ActionHandlers
 from actionweaver.actions.orchestration import (
+    Orchestration,
     build_orchestration_dict,
     parse_orchestration_expr,
 )
@@ -25,48 +24,29 @@ from actionweaver.actions.orchestration_expr import (
     _ActionHandlerLLMInvoke,
     _ActionHandlerRequired,
 )
-from actionweaver.llms.azure.functions import Functions
-from actionweaver.llms.azure.tokens import TokenUsageTracker
+from actionweaver.llms.openai.functions.functions import Functions
+from actionweaver.llms.openai.functions.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
 
-# TODO: support AsyncAzureOpenAI
 
-
-class ChatCompletionException(Exception):
+class OpenAIChatCompletionException(Exception):
     pass
 
 
-class ChatCompletion:
-    def __init__(
-        self,
-        model,
-        azure_endpoint,
-        api_key,
-        api_version,
-        token_usage_tracker=None,
-        logger=None,
-        azure_deployment="",
-    ):
+class OpenAIChatCompletion:
+    def __init__(self, model, token_usage_tracker=None, logger=None):
         self.model = model
         self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
-        if azure_deployment == "":
-            self.client = AzureOpenAI(
-                azure_endpoint=azure_endpoint, api_key=api_key, api_version=api_version
-            )
-        else:
-            self.client = AzureOpenAI(
-                azure_endpoint=azure_endpoint,
-                api_key=api_key,
-                api_version=api_version,
-                azure_deployment=azure_deployment,
-            )
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
+        self.client = OpenAI()
 
-    def _bind_action_handlers(self, action_handlers: ActionHandlers) -> ChatCompletion:
+    def _bind_action_handlers(
+        self, action_handlers: ActionHandlers
+    ) -> OpenAIChatCompletion:
         self.action_handlers = action_handlers
         return self
 
@@ -75,6 +55,7 @@ class ChatCompletion:
         call_id,
         messages,
         model,
+        response_msg,
         function_call,
         orchestration_dict,
         default_expr,
@@ -86,13 +67,7 @@ class ChatCompletion:
         if isinstance(function_call, FunctionCall):
             function_call = function_call.model_dump()
 
-        messages += [
-            {
-                "role": "assistant",
-                "content": None,
-                "function_call": function_call,
-            }
-        ]
+        messages += [response_msg]
 
         name = function_call["name"]
         arguments = function_call["arguments"]
@@ -111,7 +86,7 @@ class ChatCompletion:
                     },
                     exc_info=True,
                 )
-                raise ChatCompletionException(e) from e
+                raise OpenAIChatCompletionException(e) from e
 
             # Invoke action
             function_response = action_handler[name](**arguments)
@@ -217,7 +192,6 @@ class ChatCompletion:
             scope = DEFAULT_ACTION_SCOPE
         default_expr = _ActionHandlerLLMInvoke(scope)
 
-        # TODO: move below into init method
         # initialize action handlers
         if action_handler is None:
             if actions:
@@ -258,7 +232,7 @@ class ChatCompletion:
         )
 
         response = None
-        functions_to_be_called_with = Functions.from_expr(
+        functions = Functions.from_expr(
             orchestration_dict[default_expr],
             action_handler,
         )
@@ -272,12 +246,11 @@ class ChatCompletion:
                     "model": model,
                     "scope": scope,
                     "timestamp": time.time(),
-                    **functions_to_be_called_with.to_arguments(),
+                    **functions.to_arguments(),
                 }
             )
 
-            function_argument = functions_to_be_called_with.to_arguments()
-
+            function_argument = functions.to_arguments()
             if function_argument["functions"]:
                 api_response = self.client.chat.completions.create(
                     model=model,
@@ -294,6 +267,32 @@ class ChatCompletion:
                     stream=stream,
                 )
 
+            # logic to handle streaming API response
+            if isinstance(api_response, Stream):
+                first_element, iterator = get_first_element_and_iterator(api_response)
+
+                if first_element.choices[0].delta.content is not None:
+                    # if the first element is a message, return generator right away.
+                    return iterator
+                elif first_element.choices[0].delta.function_call:
+                    # if the first element in generator is a function call, merge all the deltas.
+                    l = list(iterator)
+
+                    deltas = {}
+                    for element in l:
+                        delta = element.choices[0].delta.model_dump()
+                        deltas = merge_dicts(deltas, delta)
+
+                    first_element.choices[0].message = ChatCompletionMessage(**deltas)
+                    api_response = first_element
+                else:
+                    raise OpenAIChatCompletionException(
+                        f"Unsupported response from streaming API: {list(iterator)}"
+                    )
+
+            else:
+                self.token_usage_tracker.track_usage(api_response.usage)
+
             self.logger.debug(
                 {
                     "message": "Received response from OpenAI API",
@@ -303,107 +302,48 @@ class ChatCompletion:
                 }
             )
 
-            # logic to handle streaming API response
-            stream_function_calls = None
-            if isinstance(api_response, Stream):
-                _, iterator = get_first_element_and_iterator(api_response)
+            choice = api_response.choices[0]
+            message = choice.message
 
-                # TODO: move this to open ai as well
-
-                for chunk in iterator:
-                    if chunk.choices:
-                        delta = chunk.choices[0].delta
-
-                        if delta.function_call:
-                            if stream_function_calls is None:
-                                # if function call detected, we merge all deltas and treat it as the non-stream response
-                                stream_function_calls = FunctionCall(
-                                    name="", arguments=""
-                                )
-
-                            stream_function_calls.name += (
-                                delta.function_call.name
-                                if delta.function_call.name
-                                else ""
-                            )
-
-                            stream_function_calls.arguments += (
-                                delta.function_call.arguments
-                                if delta.function_call.arguments
-                                else ""
-                            )
-
-                        elif delta.content:
-                            # if it has content return as generator right away
-                            return chain([chunk], iterator)
-                        else:
-                            self.logger.debug(
-                                {
-                                    "message": "Unsupported streaming response",
-                                    "chunk": str(chunk),
-                                    "timestamp": time.time(),
-                                    "call_id": call_id,
-                                }
-                            )
-
-            else:
-                self.token_usage_tracker.track_usage(api_response.usage)
-
-            if stream_function_calls is not None:
-                functions_to_be_called_with, (stop, resp) = self._invoke_function(
+            if message.function_call:
+                functions, (stop, resp) = self._invoke_function(
                     call_id,
                     messages,
                     model,
-                    stream_function_calls,
+                    message,
+                    message.function_call,
                     orchestration_dict,
                     default_expr,
                     action_handler,
-                    functions_to_be_called_with,
+                    functions,
                 )
                 if stop:
                     return resp
+            elif message.content is not None:
+                response = message.content
+
+                # ignore last message in the function loop
+                # messages += [{"role": "assistant", "content": message["content"]}]
+                if choice.finish_reason == "stop":
+                    """
+                    Stop Reasons:
+
+                    - Occurs when the API returns a message that is complete or is concluded by one of the stop sequences defined via the 'stop' parameter.
+
+                    See https://platform.openai.com/docs/guides/gpt/chat-completions-api for details.
+                    """
+                    self.logger.debug(
+                        {
+                            "message": "Model decides to stop",
+                            "model": model,
+                            "timestamp": time.time(),
+                            "call_id": call_id,
+                        }
+                    )
+
+                    break
             else:
-                choice = api_response.choices[0]
-                message = choice.message
-
-                if message.function_call:
-                    functions_to_be_called_with, (stop, resp) = self._invoke_function(
-                        call_id,
-                        messages,
-                        model,
-                        message.function_call,
-                        orchestration_dict,
-                        default_expr,
-                        action_handler,
-                        functions_to_be_called_with,
-                    )
-                    if stop:
-                        return resp
-                elif message.content is not None:
-                    response = message.content
-
-                    # ignore last message in the function loop
-                    # messages += [{"role": "assistant", "content": message["content"]}]
-                    if choice.finish_reason == "stop":
-                        """
-                        Stop Reasons:
-
-                        - Occurs when the API returns a message that is complete or is concluded by one of the stop sequences defined via the 'stop' parameter.
-
-                        See https://platform.openai.com/docs/guides/gpt/chat-completions-api for details.
-                        """
-                        self.logger.debug(
-                            {
-                                "message": "Model decides to stop",
-                                "model": model,
-                                "timestamp": time.time(),
-                                "call_id": call_id,
-                            }
-                        )
-
-                        break
-                else:
-                    raise ChatCompletionException(
-                        f"Unsupported response from OpenAI api: {api_response}"
-                    )
+                raise OpenAIChatCompletionException(
+                    f"Unsupported response from OpenAI api: {api_response}"
+                )
         return response

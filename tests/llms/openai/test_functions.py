@@ -8,7 +8,7 @@ from actionweaver.actions.orchestration_expr import (
     _ActionHandlerRequired,
     _ActionHandlerSelectOne,
 )
-from actionweaver.llms.openai.functions import Functions
+from actionweaver.llms.openai.functions.functions import Functions
 
 
 class FunctionsTestCase(unittest.TestCase):

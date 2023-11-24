@@ -49,12 +49,17 @@ class _ActionHandlerLLMInvoke:
 class _ActionHandlerRequired:
     action: str
 
+    def __hash__(self):
+        return hash(f"_ActionHandlerRequired[action={self.action}]")
+
 
 class _ActionHandlerSelectOne(UserList):
-    pass
+    def __hash__(self):
+        return hash("_ActionHandlerSelectOne")
 
 
 class _ActionDefault:
     """This class represents the default action"""
 
-    pass
+    def __hash__(self):
+        return hash("_ActionDefault")
