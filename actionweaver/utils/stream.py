@@ -25,6 +25,12 @@ def merge_dicts(dict1, dict2):
                 merged_dict[key] = merge_dicts(merged_dict[key], value)
             elif type(value) == str:
                 merged_dict[key] += value
+            elif type(value) == int:
+                merged_dict[key] += value
+            elif type(value) == list:
+                if merged_dict[key] is None:
+                    merged_dict[key] = []
+                merged_dict[key] += value
             else:
                 raise Exception(f"Unsupported type {type(value)}")
 

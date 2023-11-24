@@ -7,7 +7,7 @@ from openai.types.chat.chat_completion import ChatCompletion
 
 from actionweaver.actions import Action, ActionHandlers
 from actionweaver.actions.orchestration_expr import RequireNext, SelectOne
-from actionweaver.llms.openai.chat import OpenAIChatCompletion
+from actionweaver.llms.openai.functions.chat import OpenAIChatCompletion
 
 
 class TestOpenAIChatCompletion(unittest.TestCase):
