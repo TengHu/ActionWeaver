@@ -30,12 +30,13 @@ pip install actionweaver
 ```
 
 ## Quickstart
-Using OpenAI's API to initialize a chat completion model
+Use the **LATEST** OpenAI API that supports parallel function calling !
 ```python
-from actionweaver.llms.openai.chat import OpenAIChatCompletion
+from actionweaver.llms.openai.tools.chat import OpenAIChatCompletion
 
-chat = OpenAIChatCompletion("gpt-3.5-turbo")
-``` 
+chat = OpenAIChatCompletion("gpt-3.5-turbo-1106")
+```
+
 or using Azure OpenAI service to start a chat completion model
 ```python
 from actionweaver.llms.azure.chat import ChatCompletion
@@ -47,12 +48,12 @@ chat = ChatCompletion(
     api_version="2023-10-01-preview")
 ```
 
-or using the **LATEST** OpenAI API that supports parallel function calling !
+or using OpenAI's legacy API to initialize a chat completion model
 ```python
-from actionweaver.llms.openai.tools.chat import OpenAIChatCompletion
+from actionweaver.llms.openai.functions.chat import OpenAIChatCompletion
 
-chat = OpenAIChatCompletion("gpt-3.5-turbo-1106")
-```
+chat = OpenAIChatCompletion("gpt-3.5-turbo")
+``` 
 
 ### Add ANY Python function as a tool to the Large Language Model.
 Developers can attach **ANY** Python function as a tool with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
@@ -60,6 +61,8 @@ Developers can attach **ANY** Python function as a tool with a simple decorator.
 ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved.
 
 ```python
+from actionweaver import action
+
 @action(name="GetCurrentTime")
 def get_current_time() -> str:
     """
