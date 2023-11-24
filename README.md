@@ -53,7 +53,11 @@ or using OpenAI's legacy API to initialize a chat completion model
 from actionweaver.llms.openai.functions.chat import OpenAIChatCompletion
 
 chat = OpenAIChatCompletion("gpt-3.5-turbo")
-``` 
+```
+
+
+
+See **[latest openai api notebook](docs/source/notebooks/parallel_tools.ipynb)**
 
 ### Add ANY Python function as a tool to the Large Language Model.
 Developers can attach **ANY** Python function as a tool with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
@@ -98,8 +102,6 @@ class User(BaseModel):
 
 action_from_model(User).invoke(chat, [{"role": "user", "content": "Tom is 31 years old"}])
 ```
-
-See **[openai api notebook](docs/source/notebooks/parallel_tool.ipynb)**
 
 See **[azure openai ai service notebook](docs/source/notebooks/azure.ipynb)**
 
