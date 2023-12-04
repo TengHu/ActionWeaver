@@ -1,4 +1,8 @@
 
+![Logo](docs/figures/logo.png)
+
+
+
 # ActionWeaver
 
 🪡 AI application framework that puts function-calling as a first-class feature 🪡
