@@ -1,5 +1,5 @@
 
-![Logo](docs/figures/logo.png)
+![Logo](docs/figures/actionweaver.png)
 
 
 
