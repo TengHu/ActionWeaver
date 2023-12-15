@@ -3,15 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from actionweaver.actions import orchestration
-from actionweaver.actions.orchestration import Orchestration
-from actionweaver.actions.orchestration_expr import (
-    RequireNext,
-    SelectOne,
-    _ActionHandlerLLMInvoke,
-    _ActionHandlerRequired,
-    _ActionHandlerSelectOne,
-)
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
@@ -22,9 +13,7 @@ class ActionException(Exception):
 
 def action(
     name,
-    scope=DEFAULT_ACTION_SCOPE,
     logger=None,
-    orch_expr=None,
     models=[],
     stop=False,
 ):
@@ -33,7 +22,6 @@ def action(
 
     Args:
     - name (str): Name of the action.
-    - scope (str): Scope of the action, default is DEFAULT_ACTION_SCOPE.
     - logger (logging.Logger): Logger instance to log information, default is None.
     - models (list[pydantic.BaseModel]): List of pydantic models to be used in the action.
     - stop (bool): If True, the agent will stop immediately after invoking this action.
@@ -44,13 +32,11 @@ def action(
     _logger = logger or logging.getLogger(__name__)
 
     def create_action(decorated_obj):
-        _logger.debug({"message": f"Creating action with name: {name}, scope: {scope}"})
+        _logger.debug({"message": f"Creating action with name: {name}"})
 
         action = Action(
             name=name,
-            scope=scope,
             decorated_obj=decorated_obj,
-            orch_expr=orch_expr,
             logger=_logger,
             stop=stop,
         ).build_pydantic_model_cls(models=models)
@@ -65,15 +51,11 @@ class Action:
         self,
         name,
         decorated_obj,
-        scope=None,
-        orch_expr=None,
         logger=None,
         stop=False,
     ):
         self.name = name
-        self.scope = scope or DEFAULT_ACTION_SCOPE
         self.logger = logger
-        self.orch_expr = orch_expr
         self.stop = stop
 
         if decorated_obj.__doc__ is None:
@@ -120,7 +102,7 @@ class Action:
         return chat.create(
             messages,
             actions=[self],
-            orch_expr=RequireNext([self.name]) if force else None,
+            orch_expr={DEFAULT_ACTION_SCOPE: self} if force else None,
             stream=stream,
         )
 
@@ -129,8 +111,6 @@ class Action:
             self.name,
             self.decorated_method,
             self.pydantic_cls,
-            self.scope,
-            self.orch_expr,
             self.logger,
             self.stop,
             instance=instance,
@@ -170,6 +150,9 @@ class Action:
             instance=instance,
         )
 
+    def __hash__(self) -> int:
+        return self.name.__hash__()
+
 
 class InstanceAction(Action):
     def __init__(
@@ -177,13 +160,11 @@ class InstanceAction(Action):
         name,
         decorated_obj,
         pydantic_cls,
-        scope=None,
-        orch_expr=None,
         logger=None,
         stop=False,
         instance=None,
     ):
-        super().__init__(name, decorated_obj, scope, orch_expr, logger, stop)
+        super().__init__(name, decorated_obj, logger, stop)
         self.instance = instance
         self.pydantic_cls = pydantic_cls
 
@@ -219,13 +200,6 @@ class ActionHandlers:
 
     def __len__(self) -> int:
         return len(self.name_to_action)
-
-    def scope(self, scope):
-        return {
-            name: action
-            for name, action in self.name_to_action.items()
-            if action.scope == scope
-        }
 
     def check_orchestration_expr_validity(self, expr):
         if expr is None:
