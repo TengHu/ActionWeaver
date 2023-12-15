@@ -1,9 +1,6 @@
-from actionweaver.actions.orchestration_expr import (
-    _ActionDefault,
-    _ActionHandlerLLMInvoke,
-    _ActionHandlerRequired,
-    _ActionHandlerSelectOne,
-)
+from argparse import Action
+
+from actionweaver.actions import Action
 
 
 class FunctionException(Exception):
@@ -16,35 +13,27 @@ class Functions:
         self.function_call = function_call
 
     @classmethod
-    def from_expr(cls, expr, action_handlers):
-        if isinstance(expr, (_ActionHandlerLLMInvoke, _ActionDefault)):
+    def from_expr(cls, expr):
+        if expr is None:
             return cls()
-        elif isinstance(expr, _ActionHandlerRequired):
+        elif isinstance(expr, Action):
             return cls(
-                function_call={"name": expr.action},
+                function_call={"name": expr.name},
                 functions=[
                     {
-                        "name": action_handlers.name_to_action[expr.action].name,
-                        "description": action_handlers.name_to_action[
-                            expr.action
-                        ].description,
-                        "parameters": action_handlers.name_to_action[
-                            expr.action
-                        ].json_schema(),
+                        "name": expr.name,
+                        "description": expr.description,
+                        "parameters": expr.json_schema(),
                     }
                 ],
             )
-        elif isinstance(expr, _ActionHandlerSelectOne):
+        elif isinstance(expr, list):
             return cls(
                 functions=[
                     {
-                        "name": action_handlers.name_to_action[action].name,
-                        "description": action_handlers.name_to_action[
-                            action
-                        ].description,
-                        "parameters": action_handlers.name_to_action[
-                            action
-                        ].json_schema(),
+                        "name": action.name,
+                        "description": action.description,
+                        "parameters": action.json_schema(),
                     }
                     for action in expr
                 ],

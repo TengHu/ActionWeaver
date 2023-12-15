@@ -3,11 +3,6 @@ from __future__ import annotations
 import unittest
 
 from actionweaver.actions.action import Action, ActionHandlers
-from actionweaver.actions.orchestration_expr import (
-    _ActionHandlerLLMInvoke,
-    _ActionHandlerRequired,
-    _ActionHandlerSelectOne,
-)
 from actionweaver.llms.openai.functions.functions import Functions
 
 
@@ -27,10 +22,7 @@ class FunctionsTestCase(unittest.TestCase):
         for action in actions:
             action_handler.name_to_action[action.name] = action
         self.assertEqual(
-            Functions.from_expr(
-                _ActionHandlerSelectOne(["action1", "action2", "action3"]),
-                action_handler,
-            ).to_arguments(),
+            Functions.from_expr(actions).to_arguments(),
             {
                 "functions": [
                     {
@@ -81,10 +73,7 @@ class FunctionsTestCase(unittest.TestCase):
         )
 
         self.assertEqual(
-            Functions.from_expr(
-                _ActionHandlerRequired("action1"),
-                action_handler,
-            ).to_arguments(),
+            Functions.from_expr(actions[0]).to_arguments(),
             {
                 "functions": [
                     {
@@ -107,10 +96,7 @@ class FunctionsTestCase(unittest.TestCase):
         )
 
         self.assertEqual(
-            Functions.from_expr(
-                _ActionHandlerLLMInvoke("global"),
-                action_handler,
-            ).to_arguments(),
+            Functions.from_expr(None).to_arguments(),
             {
                 "function_call": None,
                 "functions": None,

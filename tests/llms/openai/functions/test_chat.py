@@ -10,7 +10,6 @@ from openai.types.chat.chat_completion_message import (
 )
 
 from actionweaver.actions import Action, ActionHandlers
-from actionweaver.actions.orchestration_expr import RequireNext, SelectOne
 from actionweaver.llms.openai.functions.chat import OpenAIChatCompletion
 
 
@@ -114,12 +113,9 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             """mock method"""
             return text
 
-        # Create an instance of OpenAIChatCompletion with action handlers
         actions = [
             Action("action1", mock_method).build_pydantic_model_cls(),
         ]
-        # action_handler = ActionHandlers()
-        # action_handler.name_to_action["action1"] = actions[0]
         chat_completion = OpenAIChatCompletion(model="test")
 
         # Define the expected functions arguments and return values in the API call
@@ -180,267 +176,150 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         )
         self.assertEqual(response, "last message")
 
-    # @patch("openai.resources.chat.Completions.create")
-    # def test_create_with_functions2(self, mock_create):
-    #     def mock_method(text: str):
-    #         """mock method"""
-    #         return text
+    @patch("openai.resources.chat.Completions.create")
+    def test_create_with_functions2(self, mock_create):
+        def mock_method(text: str):
+            """mock method"""
+            return text
 
-    #     # Create an instance of OpenAIChatCompletion with action handlers
-    #     actions = [
-    #         Action(
-    #             "action1",
-    #             mock_method,
-    #             orch_expr=SelectOne(["action1", "action2", "action3"]),
-    #         ).build_pydantic_model_cls(),
-    #         Action(
-    #             "action2",
-    #             mock_method,
-    #             orch_expr=RequireNext(["action2", "action3"]),
-    #         ).build_pydantic_model_cls(),
-    #         Action(
-    #             "action3",
-    #             mock_method,
-    #             orch_expr=RequireNext(["action3", "action4"]),
-    #         ).build_pydantic_model_cls(),
-    #         Action(
-    #             "action4",
-    #             mock_method,
-    #         ).build_pydantic_model_cls(),
-    #     ]
-    #     action_handler = ActionHandlers()
-    #     action_handler.name_to_action["action1"] = actions[0]
-    #     action_handler.name_to_action["action2"] = actions[1]
-    #     action_handler.name_to_action["action3"] = actions[2]
-    #     action_handler.name_to_action["action4"] = actions[3]
-    #     chat_completion = OpenAIChatCompletion(model="test")._bind_action_handlers(
-    #         action_handler
-    #     )
+        # Create an instance of OpenAIChatCompletion with action handlers
+        actions = [
+            Action(
+                "action1",
+                mock_method,
+            ).build_pydantic_model_cls(),
+            Action(
+                "action2",
+                mock_method,
+            ).build_pydantic_model_cls(),
+            Action(
+                "action3",
+                mock_method,
+            ).build_pydantic_model_cls(),
+            Action(
+                "action4",
+                mock_method,
+            ).build_pydantic_model_cls(),
+        ]
+        chat_completion = OpenAIChatCompletion(model="test")
 
-    #     # Define the expected functions arguments and return values in the API call
-    #     expected_functions_and_results = [
-    #         (
-    #             {
-    #                 "functions": ["action1", "action2", "action3", "action4"],
-    #                 "function_call": "auto",
-    #             },
-    #             self.generate_mock_function_call_response(
-    #                 "action1", '{\n  "text": "echo1"\n}'
-    #             ),
-    #         ),
-    #         (
-    #             {
-    #                 "functions": ["action2", "action3"],
-    #                 "function_call": "auto",
-    #             },
-    #             self.generate_mock_function_call_response(
-    #                 "action2", '{\n  "text": "echo2"\n}'
-    #             ),
-    #         ),
-    #         (
-    #             {"functions": ["action3"], "function_call": {"name": "action3"}},
-    #             self.generate_mock_function_call_response(
-    #                 "action3", '{\n  "text": "echo3"\n}'
-    #             ),
-    #         ),
-    #         (
-    #             {"functions": ["action4"], "function_call": {"name": "action4"}},
-    #             self.generate_mock_function_call_response(
-    #                 "action4", '{\n  "text": "echo4"\n}'
-    #             ),
-    #         ),
-    #         (
-    #             {},
-    #             self.generate_mock_message_response("last message"),
-    #         ),
-    #     ]
+        # Define the expected functions arguments and return values in the API call
+        expected_functions_and_results = [
+            (
+                {
+                    "functions": ["action1", "action2", "action3", "action4"],
+                    "function_call": "auto",
+                },
+                self.generate_mock_function_call_response(
+                    "action1", '{\n  "text": "echo1"\n}'
+                ),
+            ),
+            (
+                {
+                    "functions": ["action2", "action3"],
+                    "function_call": "auto",
+                },
+                self.generate_mock_function_call_response(
+                    "action2", '{\n  "text": "echo2"\n}'
+                ),
+            ),
+            (
+                {"functions": ["action3"], "function_call": {"name": "action3"}},
+                self.generate_mock_function_call_response(
+                    "action3", '{\n  "text": "echo3"\n}'
+                ),
+            ),
+            (
+                {"functions": ["action4"], "function_call": {"name": "action4"}},
+                self.generate_mock_function_call_response(
+                    "action4", '{\n  "text": "echo4"\n}'
+                ),
+            ),
+            (
+                {},
+                self.generate_mock_message_response("last message"),
+            ),
+        ]
 
-    #     # Set the return values of the mock
-    #     mock_create.side_effect = [
-    #         expected_result for _, expected_result in expected_functions_and_results
-    #     ]
+        # Set the return values of the mock
+        mock_create.side_effect = [
+            expected_result for _, expected_result in expected_functions_and_results
+        ]
 
-    #     # When
-    #     messages = [{"role": "user", "content": "Hi!"}]
-    #     response = chat_completion.create(messages=messages)
+        # When
+        messages = [{"role": "user", "content": "Hi!"}]
+        response = chat_completion.create(
+            messages=messages,
+            actions=actions,
+            orch={
+                actions[0]: [actions[1], actions[2]],
+                actions[1]: actions[2],
+                actions[2]: actions[3],
+                actions[3]: None,
+            },
+        )
 
-    #     # Then
-    #     # Use a loop to iterate over expected calls and assert function arguments in the API call
-    #     for i, actual_call in enumerate(mock_create.call_args_list):
-    #         if "functions" in actual_call.kwargs:
-    #             self.assertEqual(
-    #                 [func["name"] for func in actual_call.kwargs["functions"]],
-    #                 expected_functions_and_results[i][0]["functions"],
-    #             )
-    #             self.assertEqual(
-    #                 actual_call.kwargs["function_call"],
-    #                 expected_functions_and_results[i][0]["function_call"],
-    #             )
-    #         else:
-    #             self.assertFalse("functions" in expected_functions_and_results[i][0])
-    #             self.assertFalse(
-    #                 "function_call" in expected_functions_and_results[i][0]
-    #             )
+        # Then
+        # Use a loop to iterate over expected calls and assert function arguments in the API call
+        for i, actual_call in enumerate(mock_create.call_args_list):
+            if "functions" in actual_call.kwargs:
+                self.assertEqual(
+                    [func["name"] for func in actual_call.kwargs["functions"]],
+                    expected_functions_and_results[i][0]["functions"],
+                )
+                self.assertEqual(
+                    actual_call.kwargs["function_call"],
+                    expected_functions_and_results[i][0]["function_call"],
+                )
+            else:
+                self.assertFalse("functions" in expected_functions_and_results[i][0])
+                self.assertFalse(
+                    "function_call" in expected_functions_and_results[i][0]
+                )
 
-    #     self.assertEqual(
-    #         messages,
-    #         [
-    #             {"content": "Hi!", "role": "user"},
-    #             {
-    #                 "content": None,
-    #                 "function_call": {
-    #                     "arguments": '{\n  "text": "echo1"\n}',
-    #                     "name": "action1",
-    #                 },
-    #                 "role": "assistant",
-    #             },
-    #             {"content": "echo1", "name": "action1", "role": "function"},
-    #             {
-    #                 "content": None,
-    #                 "function_call": {
-    #                     "arguments": '{\n  "text": "echo2"\n}',
-    #                     "name": "action2",
-    #                 },
-    #                 "role": "assistant",
-    #             },
-    #             {"content": "echo2", "name": "action2", "role": "function"},
-    #             {
-    #                 "content": None,
-    #                 "function_call": {
-    #                     "arguments": '{\n  "text": "echo3"\n}',
-    #                     "name": "action3",
-    #                 },
-    #                 "role": "assistant",
-    #             },
-    #             {"content": "echo3", "name": "action3", "role": "function"},
-    #             {
-    #                 "content": None,
-    #                 "function_call": {
-    #                     "arguments": '{\n  "text": "echo4"\n}',
-    #                     "name": "action4",
-    #                 },
-    #                 "role": "assistant",
-    #             },
-    #             {"content": "echo4", "name": "action4", "role": "function"},
-    #         ],
-    #     )
-    #     self.assertEqual(response, "last message")
-
-    # @patch("openai.resources.chat.Completions.create")
-    # def test_create_with_llm_orchestration_expr(self, mock_create):
-    #     def mock_method(text: str):
-    #         """mock method"""
-    #         return text
-
-    #     # Create an instance of OpenAIChatCompletion with action handlers
-    #     actions = [
-    #         Action(
-    #             "action1",
-    #             mock_method,
-    #         ).build_pydantic_model_cls(),
-    #         Action(
-    #             "action2",
-    #             mock_method,
-    #         ).build_pydantic_model_cls(),
-    #         Action(
-    #             "action3",
-    #             mock_method,
-    #         ).build_pydantic_model_cls(),
-    #         Action(
-    #             "action4",
-    #             mock_method,
-    #         ).build_pydantic_model_cls(),
-    #     ]
-
-    #     action_handler = ActionHandlers()
-    #     action_handler.name_to_action["action1"] = actions[0]
-    #     action_handler.name_to_action["action2"] = actions[1]
-    #     action_handler.name_to_action["action3"] = actions[2]
-    #     action_handler.name_to_action["action4"] = actions[3]
-    #     chat_completion = OpenAIChatCompletion(model="test")._bind_action_handlers(
-    #         action_handler
-    #     )
-
-    #     # Define the expected functions arguments and return values in the API call
-    #     expected_functions_and_results = [
-    #         (
-    #             {
-    #                 "functions": ["action1", "action2", "action3"],
-    #                 "function_call": "auto",
-    #             },
-    #             self.generate_mock_function_call_response(
-    #                 "action3", '{\n  "text": "echo3"\n}'
-    #             ),
-    #         ),
-    #         (
-    #             {"functions": ["action4"], "function_call": {"name": "action4"}},
-    #             self.generate_mock_function_call_response(
-    #                 "action4", '{\n  "text": "echo4"\n}'
-    #             ),
-    #         ),
-    #         (
-    #             {},
-    #             self.generate_mock_message_response("last message"),
-    #         ),
-    #     ]
-
-    #     # Set the return values of the mock
-    #     mock_create.side_effect = [
-    #         expected_result for _, expected_result in expected_functions_and_results
-    #     ]
-
-    #     # When
-    #     messages = [{"role": "user", "content": "Hi!"}]
-    #     response = chat_completion.create(
-    #         messages=messages,
-    #         orch_expr=SelectOne(
-    #             ["action1", "action2", RequireNext(["action3", "action4"])]
-    #         ),
-    #     )
-
-    #     # Then
-    #     # Use a loop to iterate over expected calls and assert function arguments in the API call
-    #     for i, actual_call in enumerate(mock_create.call_args_list):
-    #         if "functions" in actual_call.kwargs:
-    #             self.assertEqual(
-    #                 [func["name"] for func in actual_call.kwargs["functions"]],
-    #                 expected_functions_and_results[i][0]["functions"],
-    #             )
-    #             self.assertEqual(
-    #                 actual_call.kwargs["function_call"],
-    #                 expected_functions_and_results[i][0]["function_call"],
-    #             )
-    #         else:
-    #             self.assertFalse("functions" in expected_functions_and_results[i][0])
-    #             self.assertFalse(
-    #                 "function_call" in expected_functions_and_results[i][0]
-    #             )
-
-    #     self.assertEqual(
-    #         messages,
-    #         [
-    #             {"content": "Hi!", "role": "user"},
-    #             ChatCompletionMessage(
-    #                 content=None,
-    #                 role="assistant",
-    #                 function_call=FunctionCall(
-    #                     arguments='{\n  "text": "echo3"\n}', name="action3"
-    #                 ),
-    #                 tool_calls=None,
-    #             ),
-    #             {"content": "echo3", "name": "action3", "role": "function"},
-    #             ChatCompletionMessage(
-    #                 content=None,
-    #                 role="assistant",
-    #                 function_call=FunctionCall(
-    #                     arguments='{\n  "text": "echo4"\n}', name="action4"
-    #                 ),
-    #                 tool_calls=None,
-    #             ),
-    #             {"content": "echo4", "name": "action4", "role": "function"},
-    #         ],
-    #     )
-    #     self.assertEqual(response, "last message")
+        self.assertEqual(
+            messages,
+            [
+                {"content": "Hi!", "role": "user"},
+                ChatCompletionMessage(
+                    content=None,
+                    role="assistant",
+                    function_call=FunctionCall(
+                        arguments='{\n  "text": "echo1"\n}', name="action1"
+                    ),
+                    tool_calls=None,
+                ),
+                {"content": "echo1", "name": "action1", "role": "function"},
+                ChatCompletionMessage(
+                    content=None,
+                    role="assistant",
+                    function_call=FunctionCall(
+                        arguments='{\n  "text": "echo2"\n}', name="action2"
+                    ),
+                    tool_calls=None,
+                ),
+                {"content": "echo2", "name": "action2", "role": "function"},
+                ChatCompletionMessage(
+                    content=None,
+                    role="assistant",
+                    function_call=FunctionCall(
+                        arguments='{\n  "text": "echo3"\n}', name="action3"
+                    ),
+                    tool_calls=None,
+                ),
+                {"content": "echo3", "name": "action3", "role": "function"},
+                ChatCompletionMessage(
+                    content=None,
+                    role="assistant",
+                    function_call=FunctionCall(
+                        arguments='{\n  "text": "echo4"\n}', name="action4"
+                    ),
+                    tool_calls=None,
+                ),
+                {"content": "echo4", "name": "action4", "role": "function"},
+            ],
+        )
+        self.assertEqual(response, "last message")
 
 
 if __name__ == "__main__":
