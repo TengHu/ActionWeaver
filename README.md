@@ -288,11 +288,6 @@ class FileUtility(AgentV0):
 agent = FileUtility(logger)
 ```
 
-## Roadmap
-
-- support parallel function calling.
-- support async function calling.
-- function server with open source language model.
 
 ## Contributing
 Contributions in the form of bug fixes, new features, documentation improvements, and pull requests are VERY welcomed.
