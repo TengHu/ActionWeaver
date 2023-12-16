@@ -28,10 +28,10 @@ We also have a :doc:`notebooks/use_cases` section with notebooks that demonstrat
 
 .. toctree::
    :maxdepth: 1
-   :caption: Use Cases
+   :caption: Cookbook
    :hidden:
 
-   notebooks/use_cases
+   notebooks/cookbooks/cookbook
 
 
 .. toctree::

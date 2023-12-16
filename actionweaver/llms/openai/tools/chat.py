@@ -127,7 +127,7 @@ class OpenAIChatCompletion:
                 Tools.from_expr(
                     expr,
                 ),
-                (stop, called_tools[name]),
+                (stop, *called_tools[name]),
             )
         else:
             # if multiple type of functions are invoked, use the same set of tools next api call
@@ -135,6 +135,29 @@ class OpenAIChatCompletion:
                 tools,
                 (False, list(called_tools.values())),
             )
+
+    def build_orch(self, actions: List[Action] = None, orch=None):
+        # TODO: add validation to orch,
+        action_handler = ActionHandlers()
+
+        if orch is None:
+            orch = {}
+        if DEFAULT_ACTION_SCOPE not in orch:
+            orch[DEFAULT_ACTION_SCOPE] = actions
+
+        buf = actions + list(orch.keys()) + list(orch.values())
+        for element in buf:
+            if isinstance(element, list):
+                for e in element:
+                    action_handler.name_to_action[e.name] = e
+            elif isinstance(element, Action):
+                action_handler.name_to_action[element.name] = element
+        # default action scope if not following actions not specified
+        for _, action in action_handler.name_to_action.items():
+            if action not in orch:
+                orch[action] = DEFAULT_ACTION_SCOPE
+
+        return action_handler, orch
 
     def create(
         self,
@@ -166,25 +189,7 @@ class OpenAIChatCompletion:
         # Restart token usage tracker
         self.token_usage_tracker.clear()
 
-        # TODO: add validation to orch,
-        action_handler = ActionHandlers()
-
-        if orch is None:
-            orch = {}
-        if DEFAULT_ACTION_SCOPE not in orch:
-            orch[DEFAULT_ACTION_SCOPE] = actions
-
-        buf = actions + list(orch.keys()) + list(orch.values())
-        for element in buf:
-            if isinstance(element, list):
-                for e in element:
-                    action_handler.name_to_action[e.name] = e
-            elif isinstance(element, Action):
-                action_handler.name_to_action[element.name] = element
-        # default action scope if not following actions not specified
-        for _, action in action_handler.name_to_action.items():
-            if action not in orch:
-                orch[action] = DEFAULT_ACTION_SCOPE
+        action_handler, orch = self.build_orch(actions, orch)
 
         self.logger.debug(
             {
