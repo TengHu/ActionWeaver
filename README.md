@@ -195,30 +195,36 @@ Output: Here are some events that happened or are scheduled for today (August 23
 
 ## Orchestration of Actions (Experimental)
 
-ActionWeaver enables the design of hierarchies and chains of actions with following features:
+ActionWeaver enables the design of hierarchies and chains of actions by passing in `orch` argument. For example, let's say we have actions a1, a2, a3.
+ 
+```python
+chat.create(
+    [
+        {"role": "user", "content": "message"}  # User's message in the chat
+    ],
+    actions=[a1, a2, a3],  # Initial LLM response: either a1, a2 or a3 will be chosen, or a text response without action
 
-**Scope**: Each action is confined to its own visibility scope.
-
-**Orchestration expression**:
-
-1. **SelectOne(['a1', 'a2', 'a3])**: Prompting the llm to choose either 'a2' or 'a3' after 'a1' has been invoked, or to take no action.
-   
-2. **RequireNext(['a1', 'a2', 'a3])**: Mandating the language model to execute 'a2' immediately following 'a1', followed by 'a3'.
+    # Define the orchestration logic for actions:
+    orch={
+        a1: [a2, a3],  # Hierarchy of actions. If a1 is invoked, the next action will be between a2, a3, or a message response without action
+        a2: a3,      # Chain of actions. If a2 is invoked, the next choice will be a3
+        a3: [a4]     # If a3 is invoked, the next choice will be either a4 or a message response without action
+        a4: None     # If a4 is invoked, the next response will be a message response without any action
+    }
+)
+```
 
 
 ### Example: Hierarchy of Actions
 
 Instead of overwhelming OpenAI with an extensive list of functions, we can design a hierarchy of actions. In this example, we introduce a new class that defines three specific actions, reflecting a hierarchical approach:
 
-- FileHandler with `default` scope: This action serves as the entry point for all file-manipulating actions, with orchestration logic `SelectOne(["FileHandler", "ListFiles", "ReadFile"])`.
-
-- ListFiles with `file` scope.
-- ReadFile with `file` scope.
 
 
 ```python
+from typing import List
 class FileUtility(AgentV0):
-    @action(name="FileHandler", orch_expr = SelectOne(["FileHandler", "ListFiles", "ReadFile"]))
+    @action(name="FileHandler")
     def handle_file(self, instruction: str) -> str:
         """
         Handles user instructions related to file operations. Put every context in the instruction only!
@@ -232,7 +238,7 @@ class FileUtility(AgentV0):
         return instruction
         
 
-    @action(name="ListFiles", scope="file")
+    @action(name="ListFiles")
     def list_all_files_in_repo(self, repo_path: str ='.') -> List:
         """
         Lists all the files in the given repository.
@@ -250,28 +256,7 @@ class FileUtility(AgentV0):
             break
         return file_list
 
-    @action(name="ReadFile", scope="file")
-    def read_from_file(self, file_path: str) -> str:
-        """
-        Reads the content of a file and returns it as a string.
-    
-        :param file_path: The path to the file that needs to be read.
-        :return: A string containing the content of the file.
-        """
-        logger.info(f"read_from_file: {file_path}")
-        
-        with open(file_path, 'r') as file:
-            content = file.read()
-        return f"The file content: \n{content}"
-```
-
-### Example: Chains of Actions
-
-We can also force LLM to ask for current time after read a file by setting orchestration in `ReadFile`.
-
-```python
-class FileUtility(AgentV0):
-    @action(name="ReadFile", scope="file", orch_expr = RequireNext(["ReadFile", "GetCurrentTime"]))
+    @action(name="ReadFile")
     def read_from_file(self, file_path: str) -> str:
         """
         Reads the content of a file and returns it as a string.
@@ -285,9 +270,10 @@ class FileUtility(AgentV0):
             content = file.read()
         return f"The file content: \n{content}"
 
-agent = FileUtility(logger)
+    def __call__(self, text):
+        self.messages += [{"role": "user", "content":text}]
+        return self.llm.create(messages=self.messages, actions = [self.handle_file], orch = {self.handle_file: [self.list_all_files_in_repo, self.read_from_file]})
 ```
-
 
 ## Contributing
 Contributions in the form of bug fixes, new features, documentation improvements, and pull requests are VERY welcomed.
@@ -306,4 +292,3 @@ If you find ActionWeaver useful, please consider citing the project:
     year = {2023}
 }
 ```
-
