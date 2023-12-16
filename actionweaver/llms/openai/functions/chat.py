@@ -4,7 +4,6 @@ import json
 import logging
 import time
 import uuid
-from argparse import Action
 from typing import List
 
 from openai import OpenAI, Stream
@@ -13,7 +12,7 @@ from openai.types.chat.chat_completion_message import (
     FunctionCall,
 )
 
-from actionweaver.actions.action import ActionHandlers
+from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.openai.functions.functions import Functions
 from actionweaver.llms.openai.functions.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
@@ -166,6 +165,7 @@ class OpenAIChatCompletion:
             orch[DEFAULT_ACTION_SCOPE] = actions
 
         buf = actions + list(orch.keys()) + list(orch.values())
+
         for element in buf:
             if isinstance(element, list):
                 for e in element:

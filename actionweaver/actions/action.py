@@ -143,8 +143,6 @@ class Action:
             self.name,
             self.decorated_method,
             self.pydantic_cls,
-            self.scope,
-            self.orch_expr,
             self.logger,
             self.stop,
             instance=instance,
@@ -152,6 +150,9 @@ class Action:
 
     def __hash__(self) -> int:
         return self.name.__hash__()
+
+    def __eq__(self, other):
+        return isinstance(other, Action) and self.name == other.name
 
 
 class InstanceAction(Action):
