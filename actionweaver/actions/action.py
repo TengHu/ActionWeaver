@@ -106,6 +106,13 @@ class Action:
             stream=stream,
         )
 
+    def get_function_details(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": self.json_schema(),
+        }
+
     def bind(self, instance) -> InstanceAction:
         return InstanceAction(
             self.name,
