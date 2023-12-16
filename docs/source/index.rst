@@ -15,8 +15,6 @@ We also have a :doc:`notebooks/use_cases` section with notebooks that demonstrat
 .. note::
    This project is under active development.
 
-
-
 .. toctree::
    :maxdepth: 1
    :caption: get started
@@ -24,7 +22,6 @@ We also have a :doc:`notebooks/use_cases` section with notebooks that demonstrat
 
    getting_started/introduction.md
    getting_started/installation.md
-   getting_started/concepts.md
 
 .. toctree::
    :maxdepth: 1
@@ -32,14 +29,6 @@ We also have a :doc:`notebooks/use_cases` section with notebooks that demonstrat
    :hidden:
 
    notebooks/cookbooks/cookbook
-
-
-.. toctree::
-   :maxdepth: 0
-   :caption: api reference
-   :hidden:
-
-   api
 
 .. toctree::
    :caption: community
