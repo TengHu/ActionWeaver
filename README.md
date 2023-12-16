@@ -13,6 +13,8 @@
 
 Discord: https://discord.gg/fnsnBB99C2
 
+Example cookbook: https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html#
+
 ---
 
 [Star us on Github!](https://github.com/TengHu/ActionWeaver)
@@ -28,7 +30,6 @@ Features:
 - **Debuggability**: structured logging improves the developer experience.
 
 
-**[More use cases and demos](docs/source/notebooks/use_cases.ipynb)**
 
 ## Installation
 You can install ActionWeaver using pip:
@@ -64,8 +65,6 @@ chat = OpenAIChatCompletion("gpt-3.5-turbo")
 ```
 
 
-
-See **[latest openai api notebook](docs/source/notebooks/parallel_tools.ipynb)**
 
 ### Add ANY Python function as a tool to the Large Language Model.
 Developers can attach **ANY** Python function as a tool with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
@@ -111,8 +110,6 @@ class User(BaseModel):
 action_from_model(User).invoke(chat, [{"role": "user", "content": "Tom is 31 years old"}])
 ```
 
-See **[azure openai ai service notebook](docs/source/notebooks/azure.ipynb)**
-
 
 ##  Actions of Stateful Agent 
 
@@ -150,10 +147,6 @@ agent("what time is it") # Output: 'The current time is 20:34.'
 # You can invoke actions just like regular instance methods
 agent.get_current_time() # Output: 'The current time is 20:34.'
 ```
-
-See **[Simple agent](docs/source/notebooks/stateful_agent.ipynb)**
-
-See **[ReAct/Multi-Step Planning agent](docs/source/notebooks/planning_agent.ipynb)**
 
 
 
