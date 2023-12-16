@@ -4,7 +4,6 @@ import json
 import logging
 import time
 import uuid
-from argparse import Action
 from collections import defaultdict
 from typing import List
 
@@ -14,17 +13,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
 )
 
-from actionweaver.actions.action import ActionHandlers
-from actionweaver.actions.orchestration import (
-    Orchestration,
-    build_orchestration_dict,
-    parse_orchestration_expr,
-)
-from actionweaver.actions.orchestration_expr import (
-    _ActionDefault,
-    _ActionHandlerLLMInvoke,
-    _ActionHandlerRequired,
-)
+from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.openai.tools.tokens import TokenUsageTracker
 from actionweaver.llms.openai.tools.tools import Tools
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
@@ -38,18 +27,11 @@ class OpenAIChatCompletionException(Exception):
 class OpenAIChatCompletion:
     def __init__(self, model, token_usage_tracker=None, logger=None):
         self.model = model
-        self.action_handlers = ActionHandlers()
         self.logger = logger or logging.getLogger(__name__)
         self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
             logger=logger
         )
         self.client = OpenAI()
-
-    def _bind_action_handlers(
-        self, action_handlers: ActionHandlers
-    ) -> OpenAIChatCompletion:
-        self.action_handlers = action_handlers
-        return self
 
     def _invoke_tool(
         self,
@@ -58,10 +40,9 @@ class OpenAIChatCompletion:
         model,
         response_msg,
         tool_calls,
-        orchestration_dict,
-        default_expr,
-        action_handler: ActionHandlers,
         tools,
+        orch,
+        action_handler: ActionHandlers,
     ):
         messages += [response_msg]
 
@@ -119,13 +100,8 @@ class OpenAIChatCompletion:
                     }
                 )
             else:
-                unavailable_tool_msg = f"{name} is not a valid tool name, use one of the following: {', '.join([func['name'] for func in functions.functions])}"
-                messages += [
-                    {
-                        "role": "user",
-                        "content": unavailable_tool_msg,
-                    }
-                ]
+                unavailable_tool_msg = f"{name} is not a valid tool name, use one of the following: {', '.join([tool['function']['name'] for tool in tools.tools])}"
+
                 self.logger.debug(
                     {
                         "message": "Unavailable action",
@@ -136,36 +112,25 @@ class OpenAIChatCompletion:
                         "call_id": call_id,
                     }
                 )
-                return tools, (False, None)
+                raise OpenAIChatCompletionException(unavailable_tool_msg)
 
         if len(called_tools) == 1:
             # Update new functions for next OpenAI api call
-            # if name doesn't exist in orchestration dict, use default_expr functions
-            # (HACK) if the action is forced invoked, next call should be have no functions
             name = list(called_tools.keys())[0]
 
-            inverse_orchestration_dict = {
-                value: key for key, value in orchestration_dict.data.items()
-            }
-            expr = _ActionDefault()
-            if _ActionHandlerRequired(name) in inverse_orchestration_dict:
-                expr = _ActionDefault()
-            else:
-                expr = (
-                    orchestration_dict[name]
-                    if name in orchestration_dict
-                    else orchestration_dict[default_expr]
-                )
+            expr = (
+                orch[action_handler[name]]
+                if orch[action_handler[name]] != DEFAULT_ACTION_SCOPE
+                else orch[DEFAULT_ACTION_SCOPE]
+            )
             return (
                 Tools.from_expr(
                     expr,
-                    action_handler,
                 ),
                 (stop, called_tools[name]),
             )
         else:
-            # if multiple type of functions are invoked, ignore orch and `stop` option
-            # return same set of tools
+            # if multiple type of functions are invoked, use the same set of tools next api call
             return (
                 tools,
                 (False, list(called_tools.values())),
@@ -175,22 +140,17 @@ class OpenAIChatCompletion:
         self,
         messages,
         *args,
-        scope=None,
-        orch_expr=None,
+        orch=None,
         stream=False,
-        action_handler: ActionHandlers = None,
         actions: List[Action] = [],
         **kwargs,
     ):
         """
         Invoke the OpenAI API with the provided messages and functions.
 
-        Functions supplied to the API are determined by the specified scope and orchestration expression.
 
         Args:
             messages (list): List of message objects for the conversation.
-            scope (str): Scope of the functions to be used.
-            orch_expr: If specified, overrides the orchestration dictionary, determining the API call flow.
             stream (bool): If True, returns a generator that yields the API responses.
 
         Returns:
@@ -206,43 +166,30 @@ class OpenAIChatCompletion:
         # Restart token usage tracker
         self.token_usage_tracker.clear()
 
-        if scope is None:
-            scope = DEFAULT_ACTION_SCOPE
-        default_expr = _ActionHandlerLLMInvoke(scope)
+        # TODO: add validation to orch,
+        action_handler = ActionHandlers()
 
-        # initialize action handlers
-        if action_handler is None:
-            if actions:
-                action_handler = ActionHandlers.from_actions(actions)
-            else:
-                action_handler = self.action_handlers
+        if orch is None:
+            orch = {}
+        if DEFAULT_ACTION_SCOPE not in orch:
+            orch[DEFAULT_ACTION_SCOPE] = actions
 
+        buf = actions + list(orch.keys()) + list(orch.values())
+        for element in buf:
+            if isinstance(element, list):
+                for e in element:
+                    action_handler.name_to_action[e.name] = e
+            elif isinstance(element, Action):
+                action_handler.name_to_action[element.name] = element
+        # default action scope if not following actions not specified
         for _, action in action_handler.name_to_action.items():
-            action_handler.check_orchestration_expr_validity(action.orch_expr)
-
-        # Build orchestration
-        orchestration_dict = build_orchestration_dict(action_handler)
-
-        # If an orchestration expression is provided, override the orchestration dictionary
-        if orch_expr is not None:
-            action_handler.check_orchestration_expr_validity(orch_expr)
-
-            scope = "_llm_orchestration"
-            # Construct a new orchestration dictionary using the parsed orchestration expression
-            new_orchestration_dict = parse_orchestration_expr([scope] + orch_expr)
-
-            # Replace the default expression with the new one
-            default_expr = _ActionHandlerLLMInvoke(scope)
-            new_orchestration_dict[default_expr] = new_orchestration_dict.pop(scope)
-
-            # Update the orchestration dictionary with the new one
-            orchestration_dict = new_orchestration_dict
+            if action not in orch:
+                orch[action] = DEFAULT_ACTION_SCOPE
 
         self.logger.debug(
             {
                 "message": "Creating new chat completion",
                 "model": model,
-                "scope": scope,
                 "input_messages": messages,
                 "timestamp": time.time(),
                 "call_id": call_id,
@@ -250,10 +197,7 @@ class OpenAIChatCompletion:
         )
 
         response = None
-        tools = Tools.from_expr(
-            orchestration_dict[default_expr],
-            action_handler,
-        )
+        tools = Tools.from_expr(orch[DEFAULT_ACTION_SCOPE])
 
         while True:
             self.logger.debug(
@@ -262,7 +206,6 @@ class OpenAIChatCompletion:
                     "call_id": call_id,
                     "input_messages": messages,
                     "model": model,
-                    "scope": scope,
                     "timestamp": time.time(),
                     **tools.to_arguments(),
                 }
@@ -340,10 +283,9 @@ class OpenAIChatCompletion:
                     model,
                     message,
                     message.tool_calls,
-                    orchestration_dict,
-                    default_expr,
-                    action_handler,
                     tools,
+                    orch,
+                    action_handler,
                 )
                 if stop:
                     return resp

@@ -1,5 +1,3 @@
-from argparse import Action
-
 from actionweaver.actions import Action
 
 
