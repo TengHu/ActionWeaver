@@ -1,11 +1,5 @@
-from actionweaver.actions.orchestration_expr import (
-    _ActionDefault,
-    _ActionHandlerLLMInvoke,
-    _ActionHandlerRequired,
-    _ActionHandlerSelectOne,
-)
-
 # TODO: assume all actions are functions for now
+from actionweaver.actions import Action
 
 
 class ToolException(Exception):
@@ -18,45 +12,35 @@ class Tools:
         self.tool_choice = tool_choice
 
     @classmethod
-    def from_expr(cls, expr, action_handlers):
-        if isinstance(expr, (_ActionHandlerLLMInvoke, _ActionDefault)):
+    def from_expr(cls, expr):
+        if expr is None:
             return cls()
-        elif isinstance(expr, _ActionHandlerRequired):
+        elif isinstance(expr, Action):
             return cls(
                 tool_choice={
                     "type": "function",
-                    "function": {
-                        "name": action_handlers.name_to_action[expr.action].name
-                    },
+                    "function": {"name": expr.name},
                 },
                 tools=[
                     {
                         "type": "function",
                         "function": {
-                            "name": action_handlers.name_to_action[expr.action].name,
-                            "description": action_handlers.name_to_action[
-                                expr.action
-                            ].description,
-                            "parameters": action_handlers.name_to_action[
-                                expr.action
-                            ].json_schema(),
+                            "name": expr.name,
+                            "description": expr.description,
+                            "parameters": expr.json_schema(),
                         },
                     }
                 ],
             )
-        elif isinstance(expr, _ActionHandlerSelectOne):
+        elif isinstance(expr, list):
             return cls(
                 tools=[
                     {
                         "type": "function",
                         "function": {
-                            "name": action_handlers.name_to_action[action].name,
-                            "description": action_handlers.name_to_action[
-                                action
-                            ].description,
-                            "parameters": action_handlers.name_to_action[
-                                action
-                            ].json_schema(),
+                            "name": action.name,
+                            "description": action.description,
+                            "parameters": action.json_schema(),
                         },
                     }
                     for action in expr

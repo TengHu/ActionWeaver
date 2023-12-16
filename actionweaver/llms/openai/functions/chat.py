@@ -142,7 +142,6 @@ class OpenAIChatCompletion:
         Args:
             messages (list): List of message objects for the conversation.
             scope (str): Scope of the functions to be used.
-            orch_expr: If specified, overrides the orchestration dictionary, determining the API call flow.
             stream (bool): If True, returns a generator that yields the API responses.
 
         Returns:
@@ -172,7 +171,7 @@ class OpenAIChatCompletion:
                 for e in element:
                     action_handler.name_to_action[e.name] = e
             elif isinstance(element, Action):
-                action_handler[element.name] = element
+                action_handler.name_to_action[element.name] = element
         # default action scope if not following actions not specified
         for _, action in action_handler.name_to_action.items():
             if action not in orch:
