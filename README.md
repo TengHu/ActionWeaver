@@ -13,7 +13,7 @@
 
 Discord: https://discord.gg/fnsnBB99C2
 
-Example cookbook: https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html#
+**[Explore Our Use Case Cookbook!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)**
 
 ---
 
