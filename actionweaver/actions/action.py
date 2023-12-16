@@ -102,7 +102,7 @@ class Action:
         return chat.create(
             messages,
             actions=[self],
-            orch_expr={DEFAULT_ACTION_SCOPE: self} if force else None,
+            orch={DEFAULT_ACTION_SCOPE: self, self: None} if force else None,
             stream=stream,
         )
 
