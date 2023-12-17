@@ -166,7 +166,12 @@ class OpenAIChatCompletion:
 
             deltas["tool_calls"] = list(chat_completion_message_tool_call.values())
 
+            # (HACK) Remove the 'function_call' field, otherwise calling the API will fail
+            if "function_call" in deltas:
+                del deltas["function_call"]
+
             first_element.choices[0].message = ChatCompletionMessage(**deltas)
+
             return first_element
 
     @staticmethod
