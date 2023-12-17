@@ -31,6 +31,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                             },
                             "tool_calls": None,
                         },
+                        "logprobs": None,
                     }
                 ],
                 "created": 1699539095,
@@ -59,6 +60,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
                             "function_call": None,
                             "tool_calls": None,
                         },
+                        "logprobs": None,
                     }
                 ],
                 "created": 1699538461,

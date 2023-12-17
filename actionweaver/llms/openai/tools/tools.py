@@ -50,6 +50,10 @@ class Tools:
         else:
             raise ToolException(f"Invalid orchestration expression: {expr}")
 
+    @staticmethod
+    def from_action_to_json(action: Action):
+        return {"type": "function", "function": action.get_function_details()}
+
     def to_arguments(self):
         return {
             "tools": self.tools,
