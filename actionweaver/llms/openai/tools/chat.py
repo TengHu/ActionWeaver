@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import itertools
 import json
 import logging
 import time
 import uuid
 from collections import defaultdict
-from typing import List
+from typing import List, Union
 
-from openai import OpenAI, Stream
+from openai import AsyncOpenAI, OpenAI, Stream
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
@@ -33,8 +34,8 @@ class OpenAIChatCompletion:
         )
         self.client = OpenAI()
 
+    @staticmethod
     def _invoke_tool(
-        self,
         call_id,
         messages,
         model,
@@ -43,6 +44,7 @@ class OpenAIChatCompletion:
         tools,
         orch,
         action_handler: ActionHandlers,
+        logger=logging.getLogger(__name__),
     ):
         messages += [response_msg]
 
@@ -61,7 +63,7 @@ class OpenAIChatCompletion:
                 try:
                     arguments = json.loads(tool_call["function"]["arguments"])
                 except json.decoder.JSONDecodeError as e:
-                    self.logger.error(
+                    logger.error(
                         {
                             "message": "Parsing function call arguments from OpenAI response ",
                             "arguments": tool_call["function"]["arguments"],
@@ -88,7 +90,7 @@ class OpenAIChatCompletion:
                     },
                 ]
 
-                self.logger.debug(
+                logger.debug(
                     {
                         "message": "Action invoked and response received",
                         "action_name": name,
@@ -100,9 +102,10 @@ class OpenAIChatCompletion:
                     }
                 )
             else:
+                # TODO: allow user to add callback for unavailable tool
                 unavailable_tool_msg = f"{name} is not a valid tool name, use one of the following: {', '.join([tool['function']['name'] for tool in tools.tools])}"
 
-                self.logger.debug(
+                logger.debug(
                     {
                         "message": "Unavailable action",
                         "action_name": name,
@@ -118,6 +121,7 @@ class OpenAIChatCompletion:
             # Update new functions for next OpenAI api call
             name = list(called_tools.keys())[0]
 
+            # use tools in orch[DEFAULT_ACTION_SCOPE] if expr is DEFAULT_ACTION_SCOPE
             expr = (
                 orch[action_handler[name]]
                 if orch[action_handler[name]] != DEFAULT_ACTION_SCOPE
@@ -136,8 +140,37 @@ class OpenAIChatCompletion:
                 (False, list(called_tools.values())),
             )
 
-    def build_orch(self, actions: List[Action] = None, orch=None):
-        # TODO: add validation to orch,
+    @staticmethod
+    def _handle_stream_response(api_response):
+        first_element, iterator = get_first_element_and_iterator(api_response)
+
+        if first_element.choices[0].delta.content is not None:
+            # if the first element is a message, return generator right away.
+            return iterator
+        else:
+            # if the first element is a tool call, merge all tool calls into first response and return it
+            l = list(iterator)
+
+            deltas = {}
+            for element in l:
+                delta = element.choices[0].delta.model_dump()
+                deltas = merge_dicts(deltas, delta)
+
+            chat_completion_message_tool_call = defaultdict(dict)
+            for tool_delta in deltas["tool_calls"]:
+                chat_completion_message_tool_call[tool_delta["index"]] = merge_dicts(
+                    chat_completion_message_tool_call[tool_delta["index"]],
+                    tool_delta,
+                )
+                tool_delta.pop("index")
+
+            deltas["tool_calls"] = list(chat_completion_message_tool_call.values())
+
+            first_element.choices[0].message = ChatCompletionMessage(**deltas)
+            return first_element
+
+    @staticmethod
+    def build_orch(actions: List[Action] = None, orch=None):
         action_handler = ActionHandlers()
 
         if orch is None:
@@ -161,164 +194,174 @@ class OpenAIChatCompletion:
 
     def create(
         self,
-        messages,
-        *args,
         orch=None,
-        stream=False,
         actions: List[Action] = [],
+        *args,
         **kwargs,
     ):
-        """
-        Invoke the OpenAI API with the provided messages and functions.
+        if "model" not in kwargs:
+            kwargs["model"] = self.model
 
-
-        Args:
-            messages (list): List of message objects for the conversation.
-            stream (bool): If True, returns a generator that yields the API responses.
-
-        Returns:
-            API response with generated output.
-        """
-
-        # Todo: pass call_id to the decorated method
-        call_id = str(uuid.uuid4())
-
-        model = kwargs.get("model", self.model)
-        temperature = kwargs.get("temperature", 0.0)
-
-        # Restart token usage tracker
-        self.token_usage_tracker.clear()
-
-        action_handler, orch = self.build_orch(actions, orch)
-
-        self.logger.debug(
-            {
-                "message": "Creating new chat completion",
-                "model": model,
-                "input_messages": messages,
-                "timestamp": time.time(),
-                "call_id": call_id,
-            }
+        return OpenAIChatCompletion.wrap_chat_completion_create(
+            self.client.chat.completions.create
+        )(
+            actions=actions,
+            orch=orch,
+            logger=self.logger,
+            token_usage_tracker=self.token_usage_tracker,
+            *args,
+            **kwargs,
         )
 
-        response = None
-        tools = Tools.from_expr(orch[DEFAULT_ACTION_SCOPE])
+    @staticmethod
+    def wrap_chat_completion_create(original_create_method):
+        def new_create(
+            actions: List[Action] = [],
+            orch=None,
+            logger=logging.getLogger(__name__),
+            token_usage_tracker=None,
+            *args,
+            **kwargs,
+        ):
+            # Todo: pass call_id to the decorated method
+            call_id = str(uuid.uuid4())
+            if token_usage_tracker is None:
+                token_usage_tracker = TokenUsageTracker(logger=logger)
 
-        while True:
-            self.logger.debug(
+            messages = kwargs.get("messages")
+            if messages is None:
+                raise OpenAIChatCompletionException(
+                    "messages keyword argument is required for chat completion"
+                )
+            model = kwargs.get("model")
+            if model is None:
+                raise OpenAIChatCompletionException(
+                    "model keyword argument is required for chat completion"
+                )
+
+            action_handler, orch = OpenAIChatCompletion.build_orch(actions, orch)
+
+            logger.debug(
                 {
-                    "message": "Calling OpenAI API",
-                    "call_id": call_id,
-                    "input_messages": messages,
-                    "model": model,
+                    "message": "Creating new chat completion",
                     "timestamp": time.time(),
-                    **tools.to_arguments(),
+                    "call_id": call_id,
                 }
             )
 
-            tools_argument = tools.to_arguments()
-            if tools_argument["tools"]:
-                api_response = self.client.chat.completions.create(
-                    model=model,
-                    temperature=temperature,
-                    messages=messages,
-                    stream=stream,
-                    **tools_argument,
-                )
-            else:
-                api_response = self.client.chat.completions.create(
-                    model=model,
-                    temperature=temperature,
-                    messages=messages,
-                    stream=stream,
+            response = None
+            tools = Tools.from_expr(orch[DEFAULT_ACTION_SCOPE])
+
+            while True:
+                logger.debug(
+                    {
+                        "message": "Calling OpenAI API",
+                        "call_id": call_id,
+                        "timestamp": time.time(),
+                        **tools.to_arguments(),
+                    }
                 )
 
-            # logic to handle streaming API response
-            if isinstance(api_response, Stream):
-                first_element, iterator = get_first_element_and_iterator(api_response)
-
-                if first_element.choices[0].delta.content is not None:
-                    # if the first element is a message, return generator right away.
-                    return iterator
+                tools_argument = tools.to_arguments()
+                if tools_argument["tools"]:
+                    api_response = original_create_method(
+                        *args,
+                        **kwargs,
+                        **tools_argument,
+                    )
                 else:
-                    l = list(iterator)
-
-                    deltas = {}
-                    for element in l:
-                        delta = element.choices[0].delta.model_dump()
-                        deltas = merge_dicts(deltas, delta)
-
-                    ##
-                    chat_completion_message_tool_call = defaultdict(dict)
-                    for tool_delta in deltas["tool_calls"]:
-                        chat_completion_message_tool_call[
-                            tool_delta["index"]
-                        ] = merge_dicts(
-                            chat_completion_message_tool_call[tool_delta["index"]],
-                            tool_delta,
-                        )
-                        tool_delta.pop("index")
-
-                    deltas["tool_calls"] = list(
-                        chat_completion_message_tool_call.values()
+                    api_response = original_create_method(
+                        *args,
+                        **kwargs,
                     )
 
-                    first_element.choices[0].message = ChatCompletionMessage(**deltas)
-                    api_response = first_element
+                # logic to handle streaming API response
+                if isinstance(api_response, Stream):
+                    api_response = OpenAIChatCompletion._handle_stream_response(
+                        api_response
+                    )
 
-            else:
-                self.token_usage_tracker.track_usage(api_response.usage)
+                    if isinstance(api_response, itertools._tee):
+                        # if it's a tee object, return right away
+                        return api_response
+                else:
+                    token_usage_tracker.track_usage(api_response.usage)
 
-            self.logger.debug(
-                {
-                    "message": "Received response from OpenAI API",
-                    "response": api_response,
-                    "timestamp": time.time(),
-                    "call_id": call_id,
-                }
-            )
-
-            choice = api_response.choices[0]
-            message = choice.message
-
-            if message.tool_calls:
-                tools, (stop, resp) = self._invoke_tool(
-                    call_id,
-                    messages,
-                    model,
-                    message,
-                    message.tool_calls,
-                    tools,
-                    orch,
-                    action_handler,
+                logger.debug(
+                    {
+                        "message": "Received response from OpenAI API",
+                        "response": api_response,
+                        "timestamp": time.time(),
+                        "call_id": call_id,
+                    }
                 )
-                if stop:
-                    return resp
-            elif message.content is not None:
-                response = message.content
 
-                # ignore last message in the function loop
-                # messages += [{"role": "assistant", "content": message["content"]}]
-                if choice.finish_reason == "stop":
-                    """
-                    Stop Reasons:
+                choice = api_response.choices[0]
+                message = choice.message
 
-                    - Occurs when the API returns a message that is complete or is concluded by one of the stop sequences defined via the 'stop' parameter.
+                if message.tool_calls:
+                    tools, (stop, resp) = OpenAIChatCompletion._invoke_tool(
+                        call_id,
+                        messages,
+                        model,
+                        message,
+                        message.tool_calls,
+                        tools,
+                        orch,
+                        action_handler,
+                        logger,
+                    )
+                    if stop:
+                        return resp
+                elif message.content is not None:
+                    response = message.content
 
-                    See https://platform.openai.com/docs/guides/gpt/chat-completions-api for details.
-                    """
-                    self.logger.debug(
+                    # ignore last message in the function loop
+                    # messages += [{"role": "assistant", "content": message["content"]}]
+                    if choice.finish_reason == "stop":
+                        """
+                        Stop Reasons:
+
+                        - Occurs when the API returns a message that is complete or is concluded by one of the stop sequences defined via the 'stop' parameter.
+
+                        See https://platform.openai.com/docs/guides/gpt/chat-completions-api for details.
+                        """
+                        logger.debug(
+                            {
+                                "message": "Model decides to stop",
+                                "timestamp": time.time(),
+                                "call_id": call_id,
+                            }
+                        )
+
+                        break
+                else:
+                    logger.error(
                         {
-                            "message": "Model decides to stop",
-                            "model": model,
+                            "message": "Unsupported response from OpenAI api",
+                            "response": api_response,
                             "timestamp": time.time(),
                             "call_id": call_id,
                         }
                     )
 
-                    break
-            else:
-                raise OpenAIChatCompletionException(
-                    f"Unsupported response from OpenAI api: {api_response}"
-                )
-        return response
+                    raise OpenAIChatCompletionException(
+                        f"Unsupported response from OpenAI api: {api_response}"
+                    )
+            return response
+
+        return new_create
+
+    @staticmethod
+    def patch(client: Union[OpenAI, AsyncOpenAI]):
+        if isinstance(client, AsyncOpenAI):
+            raise NotImplementedError(
+                "AsyncOpenAI client is not supported for patching yet."
+            )
+
+        client.chat.completions.create = (
+            OpenAIChatCompletion.wrap_chat_completion_create(
+                client.chat.completions.create
+            )
+        )
+        return client
