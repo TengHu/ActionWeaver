@@ -1,7 +1,7 @@
 import collections
-import logging
 import time
-from typing import Dict
+
+from openai.types import CompletionUsage
 
 
 class TokenUsageTrackerException(Exception):
@@ -10,37 +10,48 @@ class TokenUsageTrackerException(Exception):
 
 class TokenUsageTracker:
     def __init__(self, budget=None, logger=None):
-        self.logger = logger or logging.getLogger(__name__)
-        self.tracker = collections.Counter()
+        self.logger = logger
+        self.tracker = CompletionUsage(
+            completion_tokens=0, prompt_tokens=0, total_tokens=0
+        )
         self.budget = budget
 
     def clear(self):
-        self.tracker = collections.Counter()
+        self.tracker = CompletionUsage(
+            completion_tokens=0, prompt_tokens=0, total_tokens=0
+        )
         return self
 
-    def track_usage(self, usage: Dict):
-        self.tracker = self.tracker + collections.Counter(usage)
-
-        self.logger.debug(
-            {
-                "message": "token usage updated",
-                "usage": usage,
-                "total_usage": dict(self.tracker),
-                "timestamp": time.time(),
-                "budget": self.budget,
-            },
+    def track_usage(self, usage: CompletionUsage):
+        self.tracker = CompletionUsage(
+            completion_tokens=self.tracker.completion_tokens + usage.completion_tokens,
+            prompt_tokens=self.tracker.prompt_tokens + usage.prompt_tokens,
+            total_tokens=self.tracker.total_tokens + usage.total_tokens,
         )
-        if self.budget is not None and self.tracker["total_tokens"] > self.budget:
-            self.logger.error(
+
+        if self.logger:
+            self.logger.debug(
                 {
-                    "message": "Token budget exceeded",
+                    "message": "token usage updated",
                     "usage": usage,
                     "total_usage": dict(self.tracker),
+                    "timestamp": time.time(),
                     "budget": self.budget,
                 },
-                exc_info=True,
             )
+
+        if self.budget is not None and self.tracker.total_tokens > self.budget:
+            if self.logger:
+                self.logger.error(
+                    {
+                        "message": "Token budget exceeded",
+                        "usage": usage,
+                        "total_usage": self.tracker,
+                        "budget": self.budget,
+                    },
+                    exc_info=True,
+                )
             raise TokenUsageTrackerException(
-                f"Token budget exceeded. Budget: {self.budget}, Usage: {dict(self.tracker)}"
+                f"Token budget exceeded. Budget: {self.budget}, Usage: {self.tracker}"
             )
         return self.tracker
