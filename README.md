@@ -15,6 +15,9 @@ Discord: https://discord.gg/fnsnBB99C2
 
 **[Explore Our Use Case Cookbook!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)**
 
+**Considering about using LLM in your business or application ? We'd love to provide help and consultation, let's chat !**
+
+
 ---
 
 [Star us on Github!](https://github.com/TengHu/ActionWeaver)
