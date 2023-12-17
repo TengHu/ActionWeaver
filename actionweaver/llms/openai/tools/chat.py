@@ -269,7 +269,6 @@ class OpenAIChatCompletion:
 
                 tools_argument = tools.to_arguments()
                 if tools_argument["tools"]:
-                    # kwargs['messages'] = kwargs['messages'][:2]
                     api_response = original_create_method(
                         *args,
                         **kwargs,
