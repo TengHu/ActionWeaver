@@ -4,12 +4,8 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 from openai.types.chat.chat_completion import ChatCompletion
-from openai.types.chat.chat_completion_message import (
-    ChatCompletionMessage,
-    FunctionCall,
-)
 
-from actionweaver.actions import Action, ActionHandlers
+from actionweaver.actions import Action
 from actionweaver.llms.azure.chat import ChatCompletion as AzureChatCompletion
 
 
@@ -31,6 +27,7 @@ class TestAzureChatCompletion(unittest.TestCase):
                             },
                             "tool_calls": None,
                         },
+                        "logprobs": None,
                     }
                 ],
                 "created": 1699539095,
@@ -59,6 +56,7 @@ class TestAzureChatCompletion(unittest.TestCase):
                             "function_call": None,
                             "tool_calls": None,
                         },
+                        "logprobs": None,
                     }
                 ],
                 "created": 1699538461,
