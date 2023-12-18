@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import logging
+from tkinter.filedialog import Open
 from typing import Any, Dict
 
+from openai import AzureOpenAI, OpenAI
+
+# import actionweaver.llms.azure as llms_azure
+# import actionweaver.llms.openai.functions as llms_functions
+# import actionweaver.llms.openai.tools as llms_tools
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
@@ -93,18 +99,28 @@ class Action:
     def json_schema(self):
         return self.pydantic_cls.model_json_schema()
 
-    def invoke(self, chat, messages, force=True, stream=False):
-        assert len(messages) > 0, "Messages cannot be empty"
+    # def invoke(self, client=None, model=None, force=True, *args, **kwargs):
+    #     assert len(messages) > 0, "Messages cannot be empty"
 
-        if messages is None:
-            messages = []
+    #     if type(client) in (llms_azure, llms_functions, llms_tools):
+    #         if messages is None:
+    #             messages = []
 
-        return chat.create(
-            messages,
-            actions=[self],
-            orch={DEFAULT_ACTION_SCOPE: self, self: None} if force else None,
-            stream=stream,
-        )
+    #         return client.create(
+    #             messages,
+    #             actions=[self],
+    #             orch={DEFAULT_ACTION_SCOPE: self, self: None} if force else None,
+    #             *args,
+    #             **kwargs,
+    #         )
+    #     elif type(client) in (OpenAI, AzureOpenAI):
+    #         return client.chat.completions.create(
+    #             model="gpt-35-turbo-0613-16k",
+    #             messages=messages,
+    #             stream=False,
+    #             actions=[get_current_weather]
+    #             # logger=logger
+    #         )
 
     def get_function_details(self):
         return {

@@ -71,6 +71,268 @@ class TestAzureChatCompletion(unittest.TestCase):
             }
         )
 
+    ### Tests for patching AzureOpenAI client
+
+    @patch("openai.AzureOpenAI")
+    def test_patched_create_message(self, mock_azure_openai):
+        client = mock_azure_openai()
+        mock_create = client.chat.completions.create
+
+        client = AzureChatCompletion.patch(client)
+
+        # Define the expected functions arguments and return values in the API call
+        expected_functions_and_results = [
+            (
+                None,
+                self.generate_mock_message_response("Hello! what can I do for you"),
+            ),
+        ]
+
+        # Set the return values of the mock
+        mock_create.side_effect = [
+            expected_result for _, expected_result in expected_functions_and_results
+        ]
+
+        # When
+        messages = [{"role": "user", "content": "Hi!"}]
+        response = client.chat.completions.create(model="test", messages=messages)
+
+        # Then
+        mock_create.assert_called_once()
+        self.assertFalse("functions" in mock_create.call_args_list[0].kwargs)
+        self.assertFalse("function_call" in mock_create.call_args_list[0].kwargs)
+        self.assertEqual(
+            messages,
+            [
+                {"role": "user", "content": "Hi!"},
+            ],
+        )
+        self.assertEqual(response, "Hello! what can I do for you")
+
+    @patch("openai.AzureOpenAI")
+    def test_patched_create_with_functions1(self, mock_azure_openai):
+        client = mock_azure_openai()
+        mock_create = client.chat.completions.create
+        client = AzureChatCompletion.patch(client)
+
+        def mock_method(text: str):
+            """mock method"""
+            return text
+
+        actions = [
+            Action("action1", mock_method).build_pydantic_model_cls(),
+        ]
+        # Define the expected functions arguments and return values in the API call
+        expected_functions_and_results = [
+            (
+                {"functions": ["action1"], "function_call": "auto"},
+                self.generate_mock_function_call_response(
+                    "action1", '{\n  "text": "echo1"\n}'
+                ),
+            ),
+            (
+                {"functions": ["action1"], "function_call": "auto"},
+                self.generate_mock_message_response("last message"),
+            ),
+        ]
+
+        # Set the return values of the mock
+        mock_create.side_effect = [
+            expected_result for _, expected_result in expected_functions_and_results
+        ]
+
+        # When
+        messages = [{"role": "user", "content": "Hi!"}]
+        response = client.chat.completions.create(
+            model="test", messages=messages, actions=actions
+        )
+
+        # Then
+        # Use a loop to iterate over expected calls and assert function arguments in the API call
+        for i, actual_call in enumerate(mock_create.call_args_list):
+            if "functions" in actual_call.kwargs:
+                self.assertEqual(
+                    [func["name"] for func in actual_call.kwargs["functions"]],
+                    expected_functions_and_results[i][0]["functions"],
+                )
+                self.assertEqual(
+                    actual_call.kwargs["function_call"],
+                    expected_functions_and_results[i][0]["function_call"],
+                )
+            else:
+                self.assertFalse("functions" in expected_functions_and_results[i][0])
+                self.assertFalse(
+                    "function_call" in expected_functions_and_results[i][0]
+                )
+
+        self.assertEqual(
+            messages,
+            [
+                {"content": "Hi!", "role": "user"},
+                {
+                    "content": None,
+                    "function_call": {
+                        "arguments": '{\n  "text": "echo1"\n}',
+                        "name": "action1",
+                    },
+                    "role": "assistant",
+                },
+                {"content": "echo1", "name": "action1", "role": "function"},
+            ],
+        )
+        self.assertEqual(response, "last message")
+
+    @patch("openai.AzureOpenAI")
+    def test_patched_create_with_functions2(self, mock_azure_openai):
+        client = mock_azure_openai()
+        mock_create = client.chat.completions.create
+        client = AzureChatCompletion.patch(client)
+
+        def mock_method(text: str):
+            """mock method"""
+            return text
+
+        # Create an instance of OpenAIChatCompletion with action handlers
+        actions = [
+            Action(
+                "action1",
+                mock_method,
+            ).build_pydantic_model_cls(),
+            Action(
+                "action2",
+                mock_method,
+            ).build_pydantic_model_cls(),
+            Action(
+                "action3",
+                mock_method,
+            ).build_pydantic_model_cls(),
+            Action(
+                "action4",
+                mock_method,
+            ).build_pydantic_model_cls(),
+        ]
+
+        # Define the expected functions arguments and return values in the API call
+        expected_functions_and_results = [
+            (
+                {
+                    "functions": ["action1", "action2", "action3", "action4"],
+                    "function_call": "auto",
+                },
+                self.generate_mock_function_call_response(
+                    "action1", '{\n  "text": "echo1"\n}'
+                ),
+            ),
+            (
+                {
+                    "functions": ["action2", "action3"],
+                    "function_call": "auto",
+                },
+                self.generate_mock_function_call_response(
+                    "action2", '{\n  "text": "echo2"\n}'
+                ),
+            ),
+            (
+                {"functions": ["action3"], "function_call": {"name": "action3"}},
+                self.generate_mock_function_call_response(
+                    "action3", '{\n  "text": "echo3"\n}'
+                ),
+            ),
+            (
+                {"functions": ["action4"], "function_call": {"name": "action4"}},
+                self.generate_mock_function_call_response(
+                    "action4", '{\n  "text": "echo4"\n}'
+                ),
+            ),
+            (
+                {},
+                self.generate_mock_message_response("last message"),
+            ),
+        ]
+
+        # Set the return values of the mock
+        mock_create.side_effect = [
+            expected_result for _, expected_result in expected_functions_and_results
+        ]
+
+        # When
+        messages = [{"role": "user", "content": "Hi!"}]
+        response = client.chat.completions.create(
+            model="test",
+            messages=messages,
+            actions=actions,
+            orch={
+                actions[0]: [actions[1], actions[2]],
+                actions[1]: actions[2],
+                actions[2]: actions[3],
+                actions[3]: None,
+            },
+        )
+
+        # Then
+        # Use a loop to iterate over expected calls and assert function arguments in the API call
+        for i, actual_call in enumerate(mock_create.call_args_list):
+            if "functions" in actual_call.kwargs:
+                self.assertEqual(
+                    [func["name"] for func in actual_call.kwargs["functions"]],
+                    expected_functions_and_results[i][0]["functions"],
+                )
+                self.assertEqual(
+                    actual_call.kwargs["function_call"],
+                    expected_functions_and_results[i][0]["function_call"],
+                )
+            else:
+                self.assertFalse("functions" in expected_functions_and_results[i][0])
+                self.assertFalse(
+                    "function_call" in expected_functions_and_results[i][0]
+                )
+
+        self.assertEqual(
+            messages,
+            [
+                {"content": "Hi!", "role": "user"},
+                {
+                    "content": None,
+                    "function_call": {
+                        "arguments": '{\n  "text": "echo1"\n}',
+                        "name": "action1",
+                    },
+                    "role": "assistant",
+                },
+                {"content": "echo1", "name": "action1", "role": "function"},
+                {
+                    "content": None,
+                    "function_call": {
+                        "arguments": '{\n  "text": "echo2"\n}',
+                        "name": "action2",
+                    },
+                    "role": "assistant",
+                },
+                {"content": "echo2", "name": "action2", "role": "function"},
+                {
+                    "content": None,
+                    "function_call": {
+                        "arguments": '{\n  "text": "echo3"\n}',
+                        "name": "action3",
+                    },
+                    "role": "assistant",
+                },
+                {"content": "echo3", "name": "action3", "role": "function"},
+                {
+                    "content": None,
+                    "function_call": {
+                        "arguments": '{\n  "text": "echo4"\n}',
+                        "name": "action4",
+                    },
+                    "role": "assistant",
+                },
+                {"content": "echo4", "name": "action4", "role": "function"},
+            ],
+        )
+        self.assertEqual(response, "last message")
+
+    ### Tests for actionweaver.llms.azure.chat.ChatCompletion
+
     @patch("openai.resources.chat.Completions.create")
     def test_create_message(self, mock_create):
         # Create an instance of OpenAIChatCompletion
