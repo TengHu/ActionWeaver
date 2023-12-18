@@ -44,29 +44,23 @@ pip install actionweaver
 ## Quickstart
 Use the **LATEST** OpenAI API that supports parallel function calling !
 ```python
-from actionweaver.llms.openai.tools.chat import OpenAIChatCompletion
+from actionweaver.llms import patch
+from openai import OpenAI
 
-chat = OpenAIChatCompletion("gpt-3.5-turbo-1106")
+openai_client = patch(OpenAI())
 ```
 
 or using Azure OpenAI service to start a chat completion model
 ```python
-from actionweaver.llms.azure.chat import ChatCompletion
+import os
+from openai import AzureOpenAI
 
-chat = ChatCompletion(
-    model=YOUR_MODEL, 
+azure_client = patch(AzureOpenAI(
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
     api_key=os.getenv("AZURE_OPENAI_KEY"),  
-    api_version="2023-10-01-preview")
+    api_version="2023-10-01-preview"
+))
 ```
-
-or using OpenAI's legacy API to initialize a chat completion model
-```python
-from actionweaver.llms.openai.functions.chat import OpenAIChatCompletion
-
-chat = OpenAIChatCompletion("gpt-3.5-turbo")
-```
-
 
 
 ### Add ANY Python function as a tool to the Large Language Model.
@@ -90,13 +84,18 @@ def get_current_time() -> str:
     return f"The current time is {current_time}"
 
 # Ask LLM what time is it
-chat.create([{"role": "user", "content": "what time is it now"}], actions = [get_current_time])
+response = openai_client.chat.completions.create(
+  model="gpt-3.5-turbo",
+  messages=messages,
+    actions = [get_current_weather]
+)
 ```
 
 ### Force execution of an action
 You can also force the language model to execute the action. 
 ```python 
-get_current_time.invoke(chat, [{"role": "user", "content": "what time is it now"}])
+get_current_time.invoke(openai_client, messages=[{"role": "user", "content": "what time"}], model="gpt-3.5-turbo", stream=False, force=False)
+
 ```
 
 ### Structured extraction
@@ -110,7 +109,7 @@ class User(BaseModel):
     name: str
     age: int
 
-action_from_model(User).invoke(chat, [{"role": "user", "content": "Tom is 31 years old"}])
+action_from_model(User, stop=True).invoke(client, messages=[{"role": "user", "content": "Tom is 31 years old"}], model="gpt-3.5-turbo", stream=False, force=False)
 ```
 
 
@@ -119,15 +118,20 @@ action_from_model(User).invoke(chat, [{"role": "user", "content": "Tom is 31 yea
 Developers also could create a class and enhance its functionality using ActionWeaver's action decorators.
 
 ```python
+from openai import OpenAI
+from actionweaver.llms import patch
+from actionweaver import action
+
+
 class AgentV0:
     def __init__(self):
-        self.llm = OpenAIChatCompletion("gpt-3.5-turbo")
+        self.llm = patch(OpenAI())
         self.messages = []
         self.times = []
     
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.create(messages=self.messages, actions = [self.get_current_time])
+        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.get_current_time])
         
     @action(name="GetCurrentTime")
     def get_current_time(self) -> str:
@@ -179,7 +183,7 @@ class LangChainTools:
 class AgentV1(AgentV0, LangChainTools):
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.create(messages=self.messages, actions = [self.google_search, self.get_current_time])
+        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.google_search])
 
 agent = AgentV1()
 agent("what happened today")
@@ -219,11 +223,12 @@ Instead of overwhelming OpenAI with an extensive list of functions, we can desig
 
 ```python
 from typing import List
-class FileUtility(AgentV0):
+import os
+class FileAgent(AgentV0):
     @action(name="FileHandler")
     def handle_file(self, instruction: str) -> str:
         """
-        Handles user instructions related to file operations. Put every context in the instruction only!
+        Handles ALL user instructions related to file operations.
     
         Args:
             instruction (str): The user's instruction about file handling.
@@ -231,6 +236,7 @@ class FileUtility(AgentV0):
         Returns:
             str: The response to the user's question.
         """
+        print (f"Handling {instruction}")
         return instruction
         
 
@@ -243,7 +249,7 @@ class FileUtility(AgentV0):
         :return: List of file paths.
         """
 
-        logger.info(f"list_all_files_in_repo: {repo_path}")
+        print(f"list_all_files_in_repo: {repo_path}")
         
         file_list = []
         for root, _, files in os.walk(repo_path):
@@ -260,7 +266,7 @@ class FileUtility(AgentV0):
         :param file_path: The path to the file that needs to be read.
         :return: A string containing the content of the file.
         """
-        logger.info(f"read_from_file: {file_path}")
+        print(f"read_from_file: {file_path}")
         
         with open(file_path, 'r') as file:
             content = file.read()
@@ -268,7 +274,7 @@ class FileUtility(AgentV0):
 
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.create(messages=self.messages, actions = [self.handle_file], orch = {self.handle_file: [self.list_all_files_in_repo, self.read_from_file]})
+        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.list_all_files_in_repo], orch = {self.handle_file: [self.list_all_files_in_repo, self.read_from_file]})
 ```
 
 ## Contributing
@@ -279,7 +285,7 @@ Contributions in the form of bug fixes, new features, documentation improvements
 If you find ActionWeaver useful, please consider citing the project:
 
 ```bash
-@software{Teng_Hu_ActionWeaver_2023,
+@software{Teng_Hu_ActionWeaver_2024,
     author = {Teng Hu},
     license = {Apache-2.0},
     month = Aug,
