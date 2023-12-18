@@ -99,28 +99,28 @@ class Action:
     def json_schema(self):
         return self.pydantic_cls.model_json_schema()
 
-    # def invoke(self, client=None, model=None, force=True, *args, **kwargs):
-    #     assert len(messages) > 0, "Messages cannot be empty"
-
-    #     if type(client) in (llms_azure, llms_functions, llms_tools):
-    #         if messages is None:
-    #             messages = []
-
-    #         return client.create(
-    #             messages,
-    #             actions=[self],
-    #             orch={DEFAULT_ACTION_SCOPE: self, self: None} if force else None,
-    #             *args,
-    #             **kwargs,
-    #         )
-    #     elif type(client) in (OpenAI, AzureOpenAI):
-    #         return client.chat.completions.create(
-    #             model="gpt-35-turbo-0613-16k",
-    #             messages=messages,
-    #             stream=False,
-    #             actions=[get_current_weather]
-    #             # logger=logger
-    #         )
+    def invoke(
+        self,
+        client=None,
+        force=True,
+        logger=logging.getLogger(__name__),
+        token_usage_tracker=None,
+        *args,
+        **kwargs,
+    ):
+        if type(client) in (OpenAI, AzureOpenAI):
+            return client.chat.completions.create(
+                actions=[self],
+                orch={DEFAULT_ACTION_SCOPE: self, self: None} if force else None,
+                logger=logger,
+                token_usage_tracker=token_usage_tracker,
+                *args,
+                **kwargs,
+            )
+        else:
+            raise ActionException(
+                f"Client type {type(client)} not supported in invoke method. Please use OpenAI or AzureOpenAI client."
+            )
 
     def get_function_details(self):
         return {
