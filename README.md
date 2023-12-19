@@ -87,7 +87,7 @@ def get_current_time() -> str:
 response = openai_client.chat.completions.create(
   model="gpt-3.5-turbo",
   messages=messages,
-    actions = [get_current_weather]
+    actions = [get_current_time]
 )
 ```
 
