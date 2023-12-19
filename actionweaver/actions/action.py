@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from tkinter.filedialog import Open
-from typing import Any, Dict
+from typing import Any, Callable, Dict, List
 
 from openai import AzureOpenAI, OpenAI
 
@@ -19,6 +19,7 @@ def action(
     logger=None,
     models=[],
     stop=False,
+    decorators: List[Callable[..., None]] = [],
 ):
     """
     Decorator function to create an Action object.
@@ -28,6 +29,9 @@ def action(
     - logger (logging.Logger): Logger instance to log information, default is None.
     - models (list[pydantic.BaseModel]): List of pydantic models to be used in the action.
     - stop (bool): If True, the agent will stop immediately after invoking this action.
+    - decorators (list[Callable]): List of decorators (decorators) to be used with the decorated method.
+        Decorators here are not meant to be part of a Pydantic model.
+        Decorators applied directly to the decorated method, on the other hand, their signatures will be incorporated into the Pydantic model.
     Returns:
     - create_action: A function that takes a decorated object and returns an Action object.
     """
@@ -42,6 +46,7 @@ def action(
             decorated_obj=decorated_obj,
             logger=_logger,
             stop=stop,
+            decorators=decorators,
         ).build_pydantic_model_cls(models=models)
 
         return action
@@ -56,10 +61,12 @@ class Action:
         decorated_obj,
         logger=None,
         stop=False,
+        decorators: List[Callable[..., None]] = [],
     ):
         self.name = name
         self.logger = logger
         self.stop = stop
+        self.decorators = decorators
 
         if decorated_obj.__doc__ is None:
             raise ActionException(
@@ -69,13 +76,16 @@ class Action:
         self.description = decorated_obj.__doc__
         self.pydantic_cls = None
 
-        self.decorated_method = decorated_obj
+        self.undecorated_user_method = decorated_obj
+        for decorator in self.decorators:
+            decorated_obj = decorator(decorated_obj)
+        self.user_method = decorated_obj
 
-        self.__module__ = self.decorated_method.__module__
-        self.__name__ = self.decorated_method.__name__
-        self.__qualname__ = self.decorated_method.__qualname__
-        self.__annotations__ = self.decorated_method.__annotations__
-        self.__doc__ = self.decorated_method.__doc__
+        self.__module__ = self.user_method.__module__
+        self.__name__ = self.user_method.__name__
+        self.__qualname__ = self.user_method.__qualname__
+        self.__annotations__ = self.user_method.__annotations__
+        self.__doc__ = self.user_method.__doc__
 
     def build_pydantic_model_cls(
         self,
@@ -86,8 +96,8 @@ class Action:
             models = []
 
         self.pydantic_cls = create_pydantic_model_from_func(
-            self.decorated_method,
-            self.decorated_method.__name__.title(),
+            self.undecorated_user_method,
+            self.undecorated_user_method.__name__.title(),
             models=models,
             override_params=override_params,
         )
@@ -129,7 +139,7 @@ class Action:
     def bind(self, instance) -> InstanceAction:
         return InstanceAction(
             self.name,
-            self.decorated_method,
+            self.user_method,
             self.pydantic_cls,
             self.logger,
             self.stop,
@@ -143,7 +153,8 @@ class Action:
                     "message": f"[Action {self.name}, method {self.__name__}] Calling action: {self.name} with args: {args}"
                 }
             )
-        response = self.decorated_method(*args, **kwargs)
+
+        response = self.user_method(*args, **kwargs)  # TODO: trace here
         if self.logger:
             self.logger.debug(
                 {
@@ -161,7 +172,7 @@ class Action:
         """
         return InstanceAction(
             self.name,
-            self.decorated_method,
+            self.user_method,
             self.pydantic_cls,
             self.logger,
             self.stop,
@@ -196,7 +207,7 @@ class InstanceAction(Action):
                     "message": f"[Action {self.name}, method {self.__name__}] Calling action: {self.name} with args: {args}"
                 }
             )
-        response = self.decorated_method(self.instance, *args, **kwargs)
+        response = self.user_method(self.instance, *args, **kwargs)
         if self.logger:
             self.logger.debug(
                 {

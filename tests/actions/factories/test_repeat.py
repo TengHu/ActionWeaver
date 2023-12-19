@@ -14,7 +14,7 @@ class TestCase(unittest.TestCase):
             return a
 
         repeated_action = repeat(func)
-        self.assertEqual(repeated_action.decorated_method.__name__, "func")
+        self.assertEqual(repeated_action.user_method.__name__, "func")
         self.assertEqual(repeated_action.name, "Func1")
         self.assertEqual(repeated_action.description, "docstring")
         self.assertEqual(repeated_action(**{"Func1": [{"a": 1}, {"a": 2}]}), "1\n2")
