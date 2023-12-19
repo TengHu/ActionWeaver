@@ -86,15 +86,15 @@ def get_current_time() -> str:
 # Ask LLM what time is it
 response = openai_client.chat.completions.create(
   model="gpt-3.5-turbo",
-  messages=messages,
-    actions = [get_current_time]
+  messages=[{"role": "user", "content": "what time is it"}],
+  actions = [get_current_time]
 )
 ```
 
 ### Force execution of an action
 You can also force the language model to execute the action. 
 ```python 
-get_current_time.invoke(openai_client, messages=[{"role": "user", "content": "what time"}], model="gpt-3.5-turbo", stream=False, force=False)
+get_current_time.invoke(openai_client, messages=[{"role": "user", "content": "what time is it"}], model="gpt-3.5-turbo", stream=False, force=False)
 
 ```
 
