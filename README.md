@@ -198,7 +198,7 @@ Output: Here are some events that happened or are scheduled for today (August 23
 ActionWeaver enables the design of hierarchies and chains of actions by passing in `orch` argument. For example, let's say we have actions a1, a2, a3.
  
 ```python
-chat.create(
+client.chat.completions.create(
     [
         {"role": "user", "content": "message"}  # User's message in the chat
     ],
