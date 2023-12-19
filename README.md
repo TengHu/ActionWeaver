@@ -94,7 +94,7 @@ response = openai_client.chat.completions.create(
 ### Force execution of an action
 You can also force the language model to execute the action. 
 ```python 
-get_current_time.invoke(openai_client, messages=[{"role": "user", "content": "what time is it"}], model="gpt-3.5-turbo", stream=False, force=False)
+get_current_time.invoke(openai_client, messages=[{"role": "user", "content": "what time is it"}], model="gpt-3.5-turbo", stream=False, force=True)
 
 ```
 
@@ -195,7 +195,14 @@ Output: Here are some events that happened or are scheduled for today (August 23
 
 ## Orchestration of Actions (Experimental)
 
-ActionWeaver enables the design of hierarchies and chains of actions by passing in `orch` argument. For example, let's say we have actions a1, a2, a3.
+ActionWeaver enables the design of hierarchies and chains of actions by passing in `orch` argument. `orch` is a mapping from actions as keys to values including
+
+-  a list of actions: if the key action is invoked, LLM will proceed to choose an action from the provided list, or respond with a text message.
+-  an action: after key action is invoked, LLM will invoke the value action.
+-  None: after key action is invoked, LLM will respond with a text message.
+
+
+For example, let's say we have actions a1, a2, a3.
  
 ```python
 client.chat.completions.create(
