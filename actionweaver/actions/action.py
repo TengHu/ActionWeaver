@@ -6,9 +6,6 @@ from typing import Any, Dict
 
 from openai import AzureOpenAI, OpenAI
 
-# import actionweaver.llms.azure as llms_azure
-# import actionweaver.llms.openai.functions as llms_functions
-# import actionweaver.llms.openai.tools as llms_tools
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
