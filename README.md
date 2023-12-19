@@ -200,16 +200,15 @@ ActionWeaver enables the design of hierarchies and chains of actions by passing 
 ```python
 client.chat.completions.create(
     [
-        {"role": "user", "content": "message"}  # User's message in the chat
+        {"role": "user", "content": "message"} 
     ],
-    actions=[a1, a2, a3],  # Initial LLM response: either a1, a2 or a3 will be chosen, or a text response without action
-
+    actions=[a1, a2, a3], # First, LLM respond with either a1, a2 or a3, or text without action
     # Define the orchestration logic for actions:
     orch={
-        a1: [a2, a3],  # Hierarchy of actions. If a1 is invoked, the next action will be between a2, a3, or a message response without action
-        a2: a3,      # Chain of actions. If a2 is invoked, the next choice will be a3
-        a3: [a4]     # If a3 is invoked, the next choice will be either a4 or a message response without action
-        a4: None     # If a4 is invoked, the next response will be a message response without any action
+        a1: [a2, a3],  # If a1 is invoked, the next response will be either a2, a3 or a text response.
+        a2: a3,      # If a2 is invoked, the next action will be a3
+        a3: [a4]     # If a3 is invoked, the next response will be a4 or a text response.
+        a4: None     # If a4 is invoked, the next response will guarantee to be a text message
     }
 )
 ```
