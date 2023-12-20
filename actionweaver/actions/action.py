@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from tkinter.filedialog import Open
 from typing import Any, Callable, Dict, List
 
 from openai import AzureOpenAI, OpenAI
