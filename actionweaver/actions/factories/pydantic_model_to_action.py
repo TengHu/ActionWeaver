@@ -1,5 +1,6 @@
 import types
 import uuid
+from typing import Callable, List
 
 from pydantic import BaseModel
 
@@ -11,7 +12,11 @@ def truncated_uuid4():
 
 
 def action_from_model(
-    model: BaseModel, stop=True, name: str = None, description: str = None
+    model: BaseModel,
+    stop=True,
+    name: str = None,
+    description: str = None,
+    decorators: List[Callable[..., None]] = [],
 ) -> Action:
     def func(*args, **kwargs):
         if args or len(kwargs) > 1:
@@ -50,6 +55,6 @@ def action_from_model(
     func.__doc__ = description
     func.__name__ = f"create_{model.__name__.lower()}_{truncated_uuid4()}"
 
-    return action(name=name, stop=stop)(func).build_pydantic_model_cls(
-        override_params={model.__name__.lower(): (model, ...)}
-    )
+    return action(name=name, stop=stop, decorators=decorators)(
+        func
+    ).build_pydantic_model_cls(override_params={model.__name__.lower(): (model, ...)})

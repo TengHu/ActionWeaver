@@ -154,7 +154,7 @@ class Action:
                 }
             )
 
-        response = self.user_method(*args, **kwargs)  # TODO: trace here
+        response = self.user_method(*args, **kwargs)
         if self.logger:
             self.logger.debug(
                 {
