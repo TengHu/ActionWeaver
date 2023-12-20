@@ -3,7 +3,12 @@ from __future__ import annotations
 import unittest
 from unittest.mock import Mock, call, patch
 
-from openai.types.chat.chat_completion import ChatCompletion
+from openai.types.chat.chat_completion import (
+    ChatCompletion,
+    ChatCompletionMessage,
+    Choice,
+    CompletionUsage,
+)
 
 from actionweaver.actions import Action
 from actionweaver.llms.azure.chat import ChatCompletion as AzureChatCompletion
@@ -107,7 +112,32 @@ class TestAzureChatCompletion(unittest.TestCase):
                 {"role": "user", "content": "Hi!"},
             ],
         )
-        self.assertEqual(response, "Hello! what can I do for you")
+        self.assertEqual(
+            response,
+            ChatCompletion(
+                id="chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        logprobs=None,
+                        message=ChatCompletionMessage(
+                            content="Hello! what can I do for you",
+                            role="assistant",
+                            function_call=None,
+                            tool_calls=None,
+                        ),
+                    )
+                ],
+                created=1699538461,
+                model="gpt-3.5-turbo-0613",
+                object="chat.completion",
+                system_fingerprint=None,
+                usage=CompletionUsage(
+                    completion_tokens=9, prompt_tokens=19, total_tokens=28
+                ),
+            ),
+        )
 
     @patch("openai.AzureOpenAI")
     def test_patched_create_with_functions1(self, mock_azure_openai):
@@ -180,7 +210,32 @@ class TestAzureChatCompletion(unittest.TestCase):
                 {"content": "echo1", "name": "action1", "role": "function"},
             ],
         )
-        self.assertEqual(response, "last message")
+        self.assertEqual(
+            response,
+            ChatCompletion(
+                id="chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        logprobs=None,
+                        message=ChatCompletionMessage(
+                            content="last message",
+                            role="assistant",
+                            function_call=None,
+                            tool_calls=None,
+                        ),
+                    )
+                ],
+                created=1699538461,
+                model="gpt-3.5-turbo-0613",
+                object="chat.completion",
+                system_fingerprint=None,
+                usage=CompletionUsage(
+                    completion_tokens=9, prompt_tokens=19, total_tokens=28
+                ),
+            ),
+        )
 
     @patch("openai.AzureOpenAI")
     def test_patched_create_with_functions2(self, mock_azure_openai):
@@ -329,7 +384,32 @@ class TestAzureChatCompletion(unittest.TestCase):
                 {"content": "echo4", "name": "action4", "role": "function"},
             ],
         )
-        self.assertEqual(response, "last message")
+        self.assertEqual(
+            response,
+            ChatCompletion(
+                id="chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        logprobs=None,
+                        message=ChatCompletionMessage(
+                            content="last message",
+                            role="assistant",
+                            function_call=None,
+                            tool_calls=None,
+                        ),
+                    )
+                ],
+                created=1699538461,
+                model="gpt-3.5-turbo-0613",
+                object="chat.completion",
+                system_fingerprint=None,
+                usage=CompletionUsage(
+                    completion_tokens=9, prompt_tokens=19, total_tokens=28
+                ),
+            ),
+        )
 
     ### Tests for actionweaver.llms.azure.chat.ChatCompletion
 
@@ -370,7 +450,32 @@ class TestAzureChatCompletion(unittest.TestCase):
                 {"role": "user", "content": "Hi!"},
             ],
         )
-        self.assertEqual(response, "Hello! what can I do for you")
+        self.assertEqual(
+            response,
+            ChatCompletion(
+                id="chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        logprobs=None,
+                        message=ChatCompletionMessage(
+                            content="Hello! what can I do for you",
+                            role="assistant",
+                            function_call=None,
+                            tool_calls=None,
+                        ),
+                    )
+                ],
+                created=1699538461,
+                model="gpt-3.5-turbo-0613",
+                object="chat.completion",
+                system_fingerprint=None,
+                usage=CompletionUsage(
+                    completion_tokens=9, prompt_tokens=19, total_tokens=28
+                ),
+            ),
+        )
 
     @patch("openai.resources.chat.Completions.create")
     def test_create_with_functions1(self, mock_create):
@@ -443,7 +548,32 @@ class TestAzureChatCompletion(unittest.TestCase):
                 {"content": "echo1", "name": "action1", "role": "function"},
             ],
         )
-        self.assertEqual(response, "last message")
+        self.assertEqual(
+            response,
+            ChatCompletion(
+                id="chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        logprobs=None,
+                        message=ChatCompletionMessage(
+                            content="last message",
+                            role="assistant",
+                            function_call=None,
+                            tool_calls=None,
+                        ),
+                    )
+                ],
+                created=1699538461,
+                model="gpt-3.5-turbo-0613",
+                object="chat.completion",
+                system_fingerprint=None,
+                usage=CompletionUsage(
+                    completion_tokens=9, prompt_tokens=19, total_tokens=28
+                ),
+            ),
+        )
 
     @patch("openai.resources.chat.Completions.create")
     def test_create_with_functions2(self, mock_create):
@@ -593,7 +723,32 @@ class TestAzureChatCompletion(unittest.TestCase):
                 {"content": "echo4", "name": "action4", "role": "function"},
             ],
         )
-        self.assertEqual(response, "last message")
+        self.assertEqual(
+            response,
+            ChatCompletion(
+                id="chatcmpl-8IzsbGIxAwpvBncWoh3Hy4jFCqo35",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        logprobs=None,
+                        message=ChatCompletionMessage(
+                            content="last message",
+                            role="assistant",
+                            function_call=None,
+                            tool_calls=None,
+                        ),
+                    )
+                ],
+                created=1699538461,
+                model="gpt-3.5-turbo-0613",
+                object="chat.completion",
+                system_fingerprint=None,
+                usage=CompletionUsage(
+                    completion_tokens=9, prompt_tokens=19, total_tokens=28
+                ),
+            ),
+        )
 
 
 if __name__ == "__main__":

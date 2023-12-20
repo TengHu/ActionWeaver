@@ -345,7 +345,7 @@ class ChatCompletion:
                         if stop:
                             return resp
                     elif message.content is not None:
-                        response = message.content
+                        response = api_response
 
                         # ignore last message in the function loop
                         # messages += [{"role": "assistant", "content": message["content"]}]
