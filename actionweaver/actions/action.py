@@ -118,7 +118,7 @@ class Action:
         if type(client) in (OpenAI, AzureOpenAI):
             return client.chat.completions.create(
                 actions=[self],
-                orch={DEFAULT_ACTION_SCOPE: self, self: None} if force else None,
+                orch={DEFAULT_ACTION_SCOPE: self, self.name: None} if force else None,
                 logger=logger,
                 token_usage_tracker=token_usage_tracker,
                 *args,
