@@ -32,6 +32,10 @@ class OpenAIChatCompletion:
         )
         self.client = OpenAI()
 
+        print(
+            "\033[91mDeprecating soon. Please import the OpenAIChatCompletion class from actionweaver.llms.openai.tools.chat\033[0m"
+        )
+
     def _invoke_function(
         self,
         call_id,

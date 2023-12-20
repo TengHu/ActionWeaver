@@ -185,6 +185,9 @@ class Action:
     def __eq__(self, other):
         return isinstance(other, Action) and self.name == other.name
 
+    def __str__(self):
+        return self.name
+
 
 class InstanceAction(Action):
     def __init__(
