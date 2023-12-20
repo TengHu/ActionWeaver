@@ -237,6 +237,15 @@ class ChatCompletion:
         )
 
     @staticmethod
+    def validate_orch(orch):
+        if orch is not None:
+            for key in orch.keys():
+                if not isinstance(key, str):
+                    raise ChatCompletionException(
+                        f"Orch keys must be action name (str), found {type(key)}"
+                )
+
+    @staticmethod
     def wrap_chat_completion_create(original_create_method):
         def new_create(
             actions: List[Action] = [],
@@ -246,6 +255,8 @@ class ChatCompletion:
             *args,
             **kwargs,
         ):
+            ChatCompletion.validate_orch(orch)
+
             # Todo: pass call_id to the decorated method
             call_id = str(uuid.uuid4())
             if token_usage_tracker is None:
