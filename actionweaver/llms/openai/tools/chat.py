@@ -123,8 +123,8 @@ class OpenAIChatCompletion:
 
             # use tools in orch[DEFAULT_ACTION_SCOPE] if expr is DEFAULT_ACTION_SCOPE
             expr = (
-                orch[action_handler[name]]
-                if orch[action_handler[name]] != DEFAULT_ACTION_SCOPE
+                orch[name]
+                if orch[name] != DEFAULT_ACTION_SCOPE
                 else orch[DEFAULT_ACTION_SCOPE]
             )
             return (
@@ -183,7 +183,7 @@ class OpenAIChatCompletion:
         if DEFAULT_ACTION_SCOPE not in orch:
             orch[DEFAULT_ACTION_SCOPE] = actions
 
-        buf = actions + list(orch.keys()) + list(orch.values())
+        buf = actions + list(orch.values())
         for element in buf:
             if isinstance(element, list):
                 for e in element:
@@ -192,8 +192,8 @@ class OpenAIChatCompletion:
                 action_handler.name_to_action[element.name] = element
         # default action scope if not following actions not specified
         for _, action in action_handler.name_to_action.items():
-            if action not in orch:
-                orch[action] = DEFAULT_ACTION_SCOPE
+            if action.name not in orch:
+                orch[action.name] = DEFAULT_ACTION_SCOPE
 
         return action_handler, orch
 
@@ -219,6 +219,15 @@ class OpenAIChatCompletion:
         )
 
     @staticmethod
+    def validate_orch(orch):
+        if orch is not None:
+            for key in orch.keys():
+                if not isinstance(key, str):
+                    raise OpenAIChatCompletionException(
+                        f"Orch keys must be action name (str), found {type(key)}"
+                    )
+
+    @staticmethod
     def wrap_chat_completion_create(original_create_method):
         def new_create(
             actions: List[Action] = [],
@@ -228,6 +237,8 @@ class OpenAIChatCompletion:
             *args,
             **kwargs,
         ):
+            OpenAIChatCompletion.validate_orch(orch)
+
             # Todo: pass call_id to the decorated method
             call_id = str(uuid.uuid4())
             if token_usage_tracker is None:

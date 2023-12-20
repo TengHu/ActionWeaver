@@ -317,10 +317,10 @@ class TestAzureChatCompletion(unittest.TestCase):
             messages=messages,
             actions=actions,
             orch={
-                actions[0]: [actions[1], actions[2]],
-                actions[1]: actions[2],
-                actions[2]: actions[3],
-                actions[3]: None,
+                actions[0].name: [actions[1], actions[2]],
+                actions[1].name: actions[2],
+                actions[2].name: actions[3],
+                actions[3].name: None,
             },
         )
 
@@ -656,10 +656,10 @@ class TestAzureChatCompletion(unittest.TestCase):
             messages=messages,
             actions=actions,
             orch={
-                actions[0]: [actions[1], actions[2]],
-                actions[1]: actions[2],
-                actions[2]: actions[3],
-                actions[3]: None,
+                actions[0].name: [actions[1], actions[2]],
+                actions[1].name: actions[2],
+                actions[2].name: actions[3],
+                actions[3].name: None,
             },
         )
 

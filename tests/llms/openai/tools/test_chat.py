@@ -345,7 +345,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             model="test",
             messages=messages,
             actions=[actions[0]],
-            orch={actions[0]: actions[1]},
+            orch={actions[0].name: actions[1]},
         )
 
         # Then
@@ -649,7 +649,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
         # When
         messages = [{"role": "user", "content": "Hi!"}]
         response = chat_completion.create(
-            messages=messages, actions=[actions[0]], orch={actions[0]: actions[1]}
+            messages=messages, actions=[actions[0]], orch={actions[0].name: actions[1]}
         )
 
         # Then
