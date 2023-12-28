@@ -212,10 +212,10 @@ client.chat.completions.create(
     actions=[a1, a2, a3], # First, LLM respond with either a1, a2 or a3, or text without action
     # Define the orchestration logic for actions:
     orch={
-        a1: [a2, a3],  # If a1 is invoked, the next response will be either a2, a3 or a text response.
-        a2: a3,      # If a2 is invoked, the next action will be a3
-        a3: [a4]     # If a3 is invoked, the next response will be a4 or a text response.
-        a4: None     # If a4 is invoked, the next response will guarantee to be a text message
+        a1.name: [a2, a3],  # If a1 is invoked, the next response will be either a2, a3 or a text response.
+        a2.name: a3,      # If a2 is invoked, the next action will be a3
+        a3.name: [a4]     # If a3 is invoked, the next response will be a4 or a text response.
+        a4.name: None     # If a4 is invoked, the next response will guarantee to be a text message
     }
 )
 ```
@@ -280,7 +280,7 @@ class FileAgent(AgentV0):
 
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.list_all_files_in_repo], orch = {self.handle_file: [self.list_all_files_in_repo, self.read_from_file]})
+        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.list_all_files_in_repo], orch = {self.handle_file.name: [self.list_all_files_in_repo, self.read_from_file]})
 ```
 
 ## Contributing
