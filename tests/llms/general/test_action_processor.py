@@ -7,8 +7,6 @@ from urllib import response
 from actionweaver.actions import Action
 from actionweaver.llms.general.action_processor import ActionProcessor
 
-# custom_extractor
-
 
 class TestActionProcessor(unittest.TestCase):
     def test_action_processor(self):
