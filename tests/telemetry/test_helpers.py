@@ -1,8 +1,9 @@
 import logging
 import unittest
+from unittest import mock
 from unittest.mock import Mock
 
-from actionweaver.telemetry import traceable
+from actionweaver.telemetry import get_parent_run_id, traceable
 
 
 class TestTraceable(unittest.TestCase):
@@ -126,6 +127,10 @@ class TestTraceable(unittest.TestCase):
             num1 = mock_method1(number)
             num2 = mock_method1(number)
 
+            mock_logger.info(
+                {"message": "log something", "parent_run_id": get_parent_run_id()}
+            )
+
             return num1 + num2
 
         @traceable("MockFunction3", mock_logger, level=logging.INFO)
@@ -188,6 +193,13 @@ class TestTraceable(unittest.TestCase):
         mock_function3_run_id = mock_logger.log.call_args_list[3].args[1]["run_id"]
         self.assertEqual(mock_logger.log.call_args_list[3].args[1]["outputs"], 5)
         self.assertTrue("run_id" in mock_logger.log.call_args_list[3].args[1])
+
+        # log inside mock_method2
+        self.assertEqual(len(mock_logger.info.call_args_list), 1)
+        self.assertEqual(
+            mock_logger.info.call_args_list[0].args[0]["parent_run_id"],
+            mock_function2_run_id,
+        )
 
         # check lineage
         self.assertTrue(mock_function1_first_parent_run_id == mock_function2_run_id)
