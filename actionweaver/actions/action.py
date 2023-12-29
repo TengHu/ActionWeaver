@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from openai import AzureOpenAI, OpenAI
 
+from actionweaver.telemetry import traceable
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
@@ -19,6 +20,8 @@ def action(
     models=[],
     stop=False,
     decorators: List[Callable[..., None]] = [],
+    logging_metadata: Optional[dict] = None,
+    logging_level=logging.INFO,
 ):
     """
     Decorator function to create an Action object.
@@ -35,17 +38,17 @@ def action(
     - create_action: A function that takes a decorated object and returns an Action object.
     """
 
-    _logger = logger or logging.getLogger(__name__)
+    _logger = logger
 
     def create_action(decorated_obj):
-        _logger.debug({"message": f"Creating action with name: {name}"})
-
         action = Action(
             name=name,
             decorated_obj=decorated_obj,
-            logger=_logger,
             stop=stop,
             decorators=decorators,
+            logger=_logger,
+            logging_metadata=logging_metadata,
+            logging_level=logging_level,
         ).build_pydantic_model_cls(models=models)
 
         return action
@@ -58,9 +61,11 @@ class Action:
         self,
         name,
         decorated_obj,
-        logger=None,
         stop=False,
         decorators: List[Callable[..., None]] = [],
+        logger=None,
+        logging_metadata: Optional[dict] = None,
+        logging_level=logging.INFO,
     ):
         self.name = name
         self.logger = logger
@@ -79,6 +84,14 @@ class Action:
         for decorator in self.decorators:
             decorated_obj = decorator(decorated_obj)
         self.user_method = decorated_obj
+
+        if self.logger:
+            self.user_method = traceable(
+                self.name,
+                self.logger,
+                metadata=logging_metadata,
+                level=logging_level,
+            )(self.user_method)
 
         self.__module__ = self.user_method.__module__
         self.__name__ = self.user_method.__name__
@@ -146,20 +159,8 @@ class Action:
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if self.logger:
-            self.logger.debug(
-                {
-                    "message": f"[Action {self.name}, method {self.__name__}] Calling action: {self.name} with args: {args}"
-                }
-            )
-
         response = self.user_method(*args, **kwargs)
-        if self.logger:
-            self.logger.debug(
-                {
-                    "message": f"[Action {self.name}, method {self.__name__}] Received response: {response}"
-                }
-            )
+
         return response
 
     def __get__(self, instance, owner) -> InstanceAction:
@@ -203,19 +204,8 @@ class InstanceAction(Action):
         self.pydantic_cls = pydantic_cls
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        if self.logger:
-            self.logger.debug(
-                {
-                    "message": f"[Action {self.name}, method {self.__name__}] Calling action: {self.name} with args: {args}"
-                }
-            )
         response = self.user_method(self.instance, *args, **kwargs)
-        if self.logger:
-            self.logger.debug(
-                {
-                    "message": f"[Action {self.name}, method {self.__name__}] Received response: {response}"
-                }
-            )
+
         return response
 
 

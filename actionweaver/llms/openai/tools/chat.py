@@ -4,13 +4,9 @@ import itertools
 import json
 import logging
 import time
-import uuid
-from cmath import log
 from collections import defaultdict
-from curses import meta
 from typing import List, Optional, Union
 
-from click import Option
 from openai import AsyncOpenAI, OpenAI, Stream
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.chat.chat_completion_message_tool_call import (
@@ -42,9 +38,7 @@ class OpenAIChatCompletion:
     def __init__(self, model, token_usage_tracker=None, logger=None):
         self.model = model
         self.logger = logger or logging.getLogger(__name__)
-        self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
-            logger=logger
-        )
+        self.token_usage_tracker = token_usage_tracker or TokenUsageTracker()
         self.client = OpenAI()
 
     @staticmethod
