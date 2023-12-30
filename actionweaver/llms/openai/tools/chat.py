@@ -14,11 +14,11 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 
 from actionweaver.actions.action import Action, ActionHandlers
-from actionweaver.llms.openai.tools.tokens import TokenUsageTracker
 from actionweaver.llms.openai.tools.tools import Tools
 from actionweaver.telemetry import traceable
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
+from actionweaver.utils.tokens import TokenUsageTracker
 
 
 class OpenAIChatCompletionException(Exception):

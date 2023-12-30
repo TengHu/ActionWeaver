@@ -16,10 +16,10 @@ from openai.types.chat.chat_completion_message import (
 
 from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.azure.functions import Functions
-from actionweaver.llms.azure.tokens import TokenUsageTracker
 from actionweaver.telemetry import traceable
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
+from actionweaver.utils.tokens import TokenUsageTracker
 
 # TODO: support AsyncAzureOpenAI
 

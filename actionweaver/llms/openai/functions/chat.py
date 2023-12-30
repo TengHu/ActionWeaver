@@ -14,9 +14,9 @@ from openai.types.chat.chat_completion_message import (
 
 from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.openai.functions.functions import Functions
-from actionweaver.llms.openai.functions.tokens import TokenUsageTracker
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.stream import get_first_element_and_iterator, merge_dicts
+from actionweaver.utils.tokens import TokenUsageTracker
 
 
 class OpenAIChatCompletionException(Exception):
@@ -27,9 +27,7 @@ class OpenAIChatCompletion:
     def __init__(self, model, token_usage_tracker=None, logger=None):
         self.model = model
         self.logger = logger or logging.getLogger(__name__)
-        self.token_usage_tracker = token_usage_tracker or TokenUsageTracker(
-            logger=logger
-        )
+        self.token_usage_tracker = token_usage_tracker or TokenUsageTracker()
         self.client = OpenAI()
 
         print(
