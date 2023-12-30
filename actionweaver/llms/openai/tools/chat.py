@@ -220,7 +220,7 @@ class OpenAIChatCompletion:
             logging_level=logging.INFO,
             **kwargs,
         ):
-            DEFAULT_LOGGING_NAME = "actionwever_initial_chat_completion"
+            DEFAULT_LOGGING_NAME = "actionweaver_initial_chat_completion"
 
             def new_create(
                 actions: List[Action] = [],
