@@ -30,7 +30,8 @@ Features:
 - **Function Calling as First-Class Citizen**: Put function-calling at the core of the framework.
 - **Extensibility**: Integrate ANY Python code into your agent's toolbox with a single line of code, or combining tools from other ecosystems like LangChain or Llama Index.
 - **Function Orchestration**: Build complex orchestration of function callings. including intricate hierarchies or chains.
-- **Debuggability**: structured logging improves the developer experience.
+- **Telemetry and Observability**: ActionWeaver's design places a strong emphasis on developer experience and efficiency. Take a look at [this link](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/logging.html) to see how ActionWeaver implements LLM telemetry, including tracing.
+
 
 At a high level, ActionWeaver simplifies the process of creating functions, orchestrating them, and handling the invocation loop. An "action" in this context serves as an abstraction of functions or tools that users want the Language Model (LLM) to handle.
 
