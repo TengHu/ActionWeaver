@@ -114,7 +114,7 @@ class OpenAIChatCompletion:
                 Tools.from_expr(
                     expr,
                 ),
-                (stop, *called_tools[name]),
+                (stop, called_tools[name]),
             )
         else:
             # if multiple type of functions are invoked, use the same set of tools next api call
