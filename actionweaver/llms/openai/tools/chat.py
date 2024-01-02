@@ -50,7 +50,6 @@ class OpenAIChatCompletion:
         tools,
         orch,
         action_handler: ActionHandlers,
-        logger=logging.getLogger(__name__),
     ):
         messages += [response_msg]
 
@@ -298,7 +297,6 @@ class OpenAIChatCompletion:
                             tools,
                             orch,
                             action_handler,
-                            logger,
                         )
                         if stop:
                             return resp
