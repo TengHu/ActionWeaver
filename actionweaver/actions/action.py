@@ -199,7 +199,7 @@ class InstanceAction(Action):
         stop=False,
         instance=None,
     ):
-        super().__init__(name, decorated_obj, logger, stop)
+        super().__init__(name, decorated_obj, stop=stop, logger=logger)
         self.instance = instance
         self.pydantic_cls = pydantic_cls
 

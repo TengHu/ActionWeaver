@@ -131,7 +131,6 @@ class ChatCompletion:
         functions,
         orch,
         action_handler,
-        logger=logging.getLogger(__name__),
     ):
         """Invoke the function, update the messages, returns functions argument for the next OpenAI API call or halt the function loop and return the response."""
 
