@@ -4,6 +4,7 @@ import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from openai import AzureOpenAI, OpenAI
+from sqlalchemy import desc
 
 from actionweaver.telemetry import traceable
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
@@ -63,6 +64,7 @@ class Action:
         decorated_obj,
         stop=False,
         decorators: List[Callable[..., None]] = [],
+        description=None,
         logger=None,
         logging_metadata: Optional[dict] = None,
         logging_level=logging.INFO,
@@ -72,12 +74,12 @@ class Action:
         self.stop = stop
         self.decorators = decorators
 
-        if decorated_obj.__doc__ is None:
+        if decorated_obj.__doc__ is None and description is None:
             raise ActionException(
                 f"Decorated method under action {name} must have a docstring for description."
             )
+        self.description = decorated_obj.__doc__ or description
 
-        self.description = decorated_obj.__doc__
         self.pydantic_cls = None
 
         self.undecorated_user_method = decorated_obj

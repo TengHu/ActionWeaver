@@ -293,6 +293,34 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
+    def test_create_pydantic_model_from_func_with_ignored_params(self):
+        def foo(a, b, c):
+            pass
+
+        def bar(a, b, c=2):
+            pass
+
+        Foo = create_pydantic_model_from_func(foo, "Foo", ignored_params=["a"])
+        self.assertEqual(
+            Foo.model_json_schema(),
+            {
+                "properties": {"b": {"title": "B"}, "c": {"title": "C"}},
+                "required": ["b", "c"],
+                "title": "Foo",
+                "type": "object",
+            },
+        )
+        Bar = create_pydantic_model_from_func(bar, "Bar", ignored_params=["b", "c"])
+        self.assertEqual(
+            Bar.model_json_schema(),
+            {
+                "properties": {"a": {"title": "A"}},
+                "required": ["a"],
+                "title": "Bar",
+                "type": "object",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

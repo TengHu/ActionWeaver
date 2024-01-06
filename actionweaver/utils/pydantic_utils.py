@@ -4,12 +4,14 @@ from typing import Any, Callable, Type
 from pydantic import BaseModel, create_model
 
 
+# Inspired by https://github.com/pydantic/pydantic/issues/1391
 def create_pydantic_model_from_func(
     func: Callable,
     model_name: str,
     base_model: Type[BaseModel] = BaseModel,
     models=None,  # models: Optional pydantic models needed for the pydantic model from function signature
     override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg.
+    ignored_params=None,  # ignored_params: Optional list of parameters to ignore.
 ):
     if models is None:
         models = []
@@ -72,6 +74,17 @@ def create_pydantic_model_from_func(
         # use override_params instead
         params = override_params
         keyword_only_params = {}
+
+    ## Remove ignored params
+    if ignored_params:
+        params = {
+            key: value for key, value in params.items() if key not in ignored_params
+        }
+        keyword_only_params = {
+            key: value
+            for key, value in keyword_only_params.items()
+            if key not in ignored_params
+        }
 
     # Configure the class to allow extra parameters if **kwargs is in the function signature
     class Config:
