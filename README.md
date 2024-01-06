@@ -95,6 +95,23 @@ response = openai_client.chat.completions.create(
 )
 ```
 
+### Easily integrate tools from libraries such as [Langchain](https://github.com/langchain-ai/langchain/tree/master/libs/community)
+
+```python
+from actionweaver.actions.factories.langchain import action_from_tool
+
+from langchain_community.tools.google_search.tool import GoogleSearchRun
+from langchain_community.utilities.google_search import GoogleSearchAPIWrapper
+
+search_tool = GoogleSearchRun(api_wrapper=GoogleSearchAPIWrapper())
+
+openai_client.chat.completions.create(
+  model="gpt-3.5-turbo",
+  messages=[{"role": "user", "content": "what date is today?"}],
+  actions = [action_from_tool(search_tool)]
+)
+```
+
 ### Force execution of an action
 You can also force the language model to execute the action. 
 ```python 
