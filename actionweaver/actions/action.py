@@ -4,7 +4,6 @@ import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from openai import AzureOpenAI, OpenAI
-from sqlalchemy import desc
 
 from actionweaver.telemetry import traceable
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
