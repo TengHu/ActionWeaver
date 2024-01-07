@@ -22,7 +22,7 @@ Discord: https://discord.gg/fnsnBB99C2
 
 [Star us on Github!](https://github.com/TengHu/ActionWeaver)
 
-ActionWeaver is an AI application framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
+ActionWeaver is an AI application framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver stHello Mars! user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
 
 Our vision is to enable seamlessly merging traditional computing systems with the powerful reasoning capabilities of Language Model Models.
 
