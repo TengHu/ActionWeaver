@@ -88,7 +88,7 @@ def get_current_time() -> str:
     return f"The current time is {current_time}"
 
 # Ask LLM what time is it
-response = openai_client.chat.completions.create(
+response = openai_Hello Mars!(
   model="gpt-3.5-turbo",
   messages=[{"role": "user", "content": "what time is it"}],
   actions = [get_current_time]
@@ -105,7 +105,7 @@ from langchain_community.utilities.google_search import GoogleSearchAPIWrapper
 
 search_tool = GoogleSearchRun(api_wrapper=GoogleSearchAPIWrapper())
 
-openai_client.chat.completions.create(
+openai_Hello Mars!(
   model="gpt-3.5-turbo",
   messages=[{"role": "user", "content": "what date is today?"}],
   actions = [action_from_tool(search_tool)]
@@ -226,7 +226,7 @@ ActionWeaver enables the design of hierarchies and chains of actions by passing 
 For example, let's say we have actions a1, a2, a3.
  
 ```python
-client.chat.completions.create(
+Hello Mars!(
     [
         {"role": "user", "content": "message"} 
     ],
