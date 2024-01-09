@@ -5,7 +5,7 @@ from pydantic import BaseModel, create_model
 
 
 # Inspired by https://github.com/pydantic/pydantic/issues/1391
-def create_pydantic_model_from_func(
+def another_create_pydantic_model_from_func(
     func: Callable,
     model_name: str,
     base_model: Type[BaseModel] = BaseModel,
