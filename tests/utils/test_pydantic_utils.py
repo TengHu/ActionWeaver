@@ -132,7 +132,7 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def test_create_pydantic_model_from_func_with_decorators(self):
+    def test_another_create_pydantic_model_from_func_with_decorators(self):
         @cache
         def foo1(bar1: int, bar2: int, bar3: str = "qux"):
             """foo"""
