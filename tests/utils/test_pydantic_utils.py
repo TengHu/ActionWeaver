@@ -6,7 +6,7 @@ import unittest
 from pydantic import BaseModel, create_model
 
 from actionweaver.utils.cache import cache, lru_cache, preserve_original_signature
-from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
+from actionweaver.utils.pydantic_utils import another_create_pydantic_model_from_func
 
 
 class UtilsTestCase(unittest.TestCase):
