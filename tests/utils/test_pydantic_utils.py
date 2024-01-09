@@ -293,7 +293,7 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def test_create_pydantic_model_from_func_with_ignored_params(self):
+    def test_another_create_pydantic_model_from_func_with_ignored_params(self):
         def foo(a, b, c):
             pass
 
