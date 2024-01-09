@@ -205,7 +205,7 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def test_create_pydantic_model_from_func_with_override_params(self):
+    def test_another_create_pydantic_model_from_func_with_override_params(self):
         class Person(BaseModel):
             first_name: str
             last_name: str
