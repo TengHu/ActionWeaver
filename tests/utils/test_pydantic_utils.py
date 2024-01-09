@@ -10,7 +10,7 @@ from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
 class UtilsTestCase(unittest.TestCase):
-    def test_create_pydantic_model_from_func(self):
+    def test_another_create_pydantic_model_from_func(self):
         def foo(bar1: int, bar2: int, bar3: str = "qux"):
             pass
 
