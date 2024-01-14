@@ -29,6 +29,7 @@ def action_from_model(
         if kwargs:
             (key,) = kwargs.keys()
 
+            # the only keyword argument should be the model name
             if key != model.__name__.lower():
                 raise ValueError(
                     f"Invalid input: The method should accept a single keyword argument: {model.__name__.lower()}",
@@ -53,7 +54,7 @@ def action_from_model(
         description = f"Extract {model.__name__}"
 
     func.__doc__ = description
-    func.__name__ = f"create_{model.__name__.lower()}_{truncated_uuid4()}"
+    func.__name__ = f"create_{model.__name__.lower()}_from_pydantic_model"
 
     return action(name=name, stop=stop, decorators=decorators)(
         func
