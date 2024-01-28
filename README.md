@@ -10,13 +10,11 @@
 **Supporting both OpenAI API and Azure OpenAI service!**
 
 ---
+🚀  **[Explore Our Cookbooks For Tutorials & Examples!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)** 🚀 
 
 Discord: https://discord.gg/fnsnBB99C2
 
-**[EXPLORE OUR COOKBOOKS FOR EXAMPLES & TUTORIALS!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)**
-
 **Considering about using LLM in your business or application ? We'd love to provide help and consultation, let's chat !**
-
 
 ---
 
