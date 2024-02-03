@@ -5,6 +5,7 @@ from unittest.mock import Mock, call, patch
 from urllib import response
 
 from actionweaver.actions import Action
+from actionweaver.actions.factories.function import action
 from actionweaver.llms.general.action_processor import ActionProcessor
 
 
@@ -18,14 +19,7 @@ class TestActionProcessor(unittest.TestCase):
                 {"location": location, "temperature": "22", "unit": "celsius"}
             )
 
-        ap = ActionProcessor(
-            tools=[
-                Action(
-                    "GetWeather",
-                    get_current_weather,
-                ).build_pydantic_model_cls()
-            ]
-        )
+        ap = ActionProcessor(tools=[action("GetWeather")(get_current_weather)])
 
         response, ok, err = ap.respond("hello")
         self.assertFalse(ok)
@@ -66,10 +60,7 @@ class TestActionProcessor(unittest.TestCase):
 
         ap = ActionProcessor(
             tools=[
-                Action(
-                    "GetWeather",
-                    get_current_weather,
-                ).build_pydantic_model_cls()
+                action("GetWeather")(get_current_weather),
             ],
             custom_extractor=extractor,
         )

@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 
 from openai import AzureOpenAI, OpenAI
 
-from actionweaver.actions import Action, action
+from actionweaver.actions import Action
+from actionweaver.actions.factories.function import action
 
 # TODO: test `enforce`` argument
 
@@ -21,9 +22,7 @@ class TestAction(unittest.TestCase):
             """mock method"""
             return text
 
-        actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
-        ]
+        actions = [action("action1")(mock_method)]
 
         actions[0].invoke(
             client,
@@ -59,7 +58,7 @@ class TestAction(unittest.TestCase):
         assert mock_method(1) == 2
         # This test verify that the decorator is incorporated into the pydantic model
         self.assertEqual(
-            mock_method.pydantic_cls.model_json_schema(),
+            mock_method.json_schema(),
             {
                 "properties": {"another_num": {"title": "Another Num"}},
                 "required": ["another_num"],
@@ -85,7 +84,7 @@ class TestAction(unittest.TestCase):
 
         # This test verify that the decorator is not incorporated into the pydantic model
         self.assertEqual(
-            mock_method.pydantic_cls.model_json_schema(),
+            mock_method.json_schema(),
             {
                 "properties": {"num": {"title": "Num", "type": "integer"}},
                 "required": ["num"],

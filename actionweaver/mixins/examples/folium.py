@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from actionweaver import action
+from actionweaver.actions.factories.function import action
 
 
 class Place(BaseModel):

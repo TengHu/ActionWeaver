@@ -1,6 +1,10 @@
 from typing import List
 
-from actionweaver.actions.action import Action, action
+from actionweaver.actions import Action
+from actionweaver.actions.factories.function import (
+    action,
+    create_pydantic_model_from_function,
+)
 
 
 def repeat(
@@ -29,7 +33,7 @@ def repeat(
             (value,) = kwargs.values()
             if not isinstance(value, list):
                 raise ValueError(
-                    f"Invalid input: The {act.name} should have a list of {act.pydantic_cls.__name__} objects",
+                    f"Invalid input: The {act.name} should have a list of {act.pydantic_model.__name__} objects",
                     f"instead: {value}",
                 )
 
@@ -44,6 +48,10 @@ def repeat(
     func.__name__ = act.__name__
     func.__doc__ = description
 
-    return action(name=name, stop=act.stop)(func).build_pydantic_model_cls(
-        override_params={act.name: (List[act.pydantic_cls], ...)}
-    )
+    return action(
+        name=name,
+        pydantic_model=create_pydantic_model_from_function(
+            func, override_params={act.name: (List[act.pydantic_model], ...)}
+        ),
+        stop=act.stop,
+    )(func)
