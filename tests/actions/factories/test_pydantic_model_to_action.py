@@ -26,7 +26,7 @@ class TestCase(unittest.TestCase):
         action = action_from_model(
             TestCase.Place, name="Func1", description="Extract Place model"
         )
-        self.assertTrue("create_place" in action.user_method.__name__)
+        self.assertTrue("create_place" in action.function.__name__)
         self.assertEqual(action.name, "Func1")
         self.assertEqual(action.stop, True)
         self.assertEqual(action.description, "Extract Place model")
@@ -39,7 +39,7 @@ class TestCase(unittest.TestCase):
             TestCase.Places, name="Func2", description="Extract Places model"
         )
 
-        self.assertTrue("create_place" in action.user_method.__name__)
+        self.assertTrue("create_place" in action.function.__name__)
 
         self.assertEqual(action.name, "Func2")
         self.assertEqual(action.stop, True)
@@ -70,7 +70,7 @@ class TestCase(unittest.TestCase):
         action = action_from_model(
             TestCase.Place, name="Func1", description="Extract Place model"
         )
-        self.assertTrue("create_place" in action.user_method.__name__)
+        self.assertTrue("create_place" in action.function.__name__)
         self.assertEqual(action.name, "Func1")
         self.assertEqual(action.stop, True)
         self.assertEqual(action.description, "Extract Place model")
@@ -86,7 +86,7 @@ class TestCase(unittest.TestCase):
             decorators=[decorator],
         )
 
-        self.assertTrue("create_place" in action.user_method.__name__)
+        self.assertTrue("create_place" in action.function.__name__)
         self.assertEqual(len(action.decorators), 1)
 
         self.assertEqual(action.name, "Func2")

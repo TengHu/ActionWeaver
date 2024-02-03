@@ -1,7 +1,11 @@
 import collections
 from typing import List
 
-from actionweaver.actions.action import Action, action
+from actionweaver.actions import Action
+from actionweaver.actions.factories.function import (
+    action,
+    create_pydantic_model_from_function,
+)
 
 
 def combine(
@@ -43,8 +47,11 @@ def combine(
 
     params = collections.OrderedDict()
     for act in acts:
-        params[act.name] = (act.pydantic_cls, ...)
+        params[act.name] = (act.pydantic_model, ...)
 
-    return action(name=name.title())(func).build_pydantic_model_cls(
-        override_params=params
-    )
+    return action(
+        name=name.title(),
+        pydantic_model=create_pydantic_model_from_function(
+            func, override_params=params
+        ),
+    )(func)

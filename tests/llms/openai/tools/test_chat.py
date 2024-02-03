@@ -11,6 +11,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 
 from actionweaver.actions import Action
+from actionweaver.actions.factories.function import action
 from actionweaver.llms.openai.tools.chat import OpenAIChatCompletion
 
 
@@ -195,7 +196,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             return text
 
         actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
+            action("action1")(mock_method),
         ]
 
         # Define the expected functions arguments and return values in the API call
@@ -304,8 +305,8 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             return text
 
         actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
-            Action("action2", mock_method).build_pydantic_model_cls(),
+            action("action1")(mock_method),
+            action("action2")(mock_method),
         ]
 
         # Define the expected functions arguments and return values in the API call
@@ -448,9 +449,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             """mock method"""
             return text
 
-        actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
-        ]
+        actions = [action("action1")(mock_method)]
 
         # Define the expected functions arguments and return values in the API call
         expected_functions_and_results = [
@@ -578,8 +577,8 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             return text
 
         actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
-            Action("action2", mock_method).build_pydantic_model_cls(),
+            action("action1")(mock_method),
+            action("action2")(mock_method),
         ]
 
         # Define the expected functions arguments and return values in the API call
@@ -782,7 +781,7 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             return text
 
         actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
+            action("action1")(mock_method),
         ]
         chat_completion = OpenAIChatCompletion(model="test")
 
@@ -886,8 +885,8 @@ class TestOpenAIChatCompletion(unittest.TestCase):
             return text
 
         actions = [
-            Action("action1", mock_method).build_pydantic_model_cls(),
-            Action("action2", mock_method).build_pydantic_model_cls(),
+            action("action1")(mock_method),
+            action("action2")(mock_method),
         ]
         chat_completion = OpenAIChatCompletion(model="test")
 

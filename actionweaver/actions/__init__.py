@@ -1,1 +1,1 @@
-from .action import Action, ActionException, ActionHandlers, action
+from .action import Action, ActionException, ActionHandlers

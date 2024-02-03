@@ -1,1 +1,3 @@
-from .actions import Action, ActionException, action
+from actionweaver.actions.factories.function import action
+
+from .actions import Action, ActionException

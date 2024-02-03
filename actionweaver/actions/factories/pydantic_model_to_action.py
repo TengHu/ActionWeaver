@@ -4,7 +4,11 @@ from typing import Callable, List
 
 from pydantic import BaseModel
 
-from actionweaver.actions.action import Action, action
+from actionweaver.actions import Action
+from actionweaver.actions.factories.function import (
+    action,
+    create_pydantic_model_from_function,
+)
 
 
 def truncated_uuid4():
@@ -56,6 +60,11 @@ def action_from_model(
     func.__doc__ = description
     func.__name__ = f"create_{model.__name__.lower()}_from_pydantic_model"
 
-    return action(name=name, stop=stop, decorators=decorators)(
-        func
-    ).build_pydantic_model_cls(override_params={model.__name__.lower(): (model, ...)})
+    return action(
+        name=name,
+        pydantic_model=create_pydantic_model_from_function(
+            func, override_params={model.__name__.lower(): (model, ...)}
+        ),
+        stop=stop,
+        decorators=decorators,
+    )(func)

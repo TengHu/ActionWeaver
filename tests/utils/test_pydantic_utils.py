@@ -64,7 +64,7 @@ class UtilsTestCase(unittest.TestCase):
         def bar(a: int, persons: Persons):
             pass
 
-        Foo = create_pydantic_model_from_func(foo, "Foo", models=[Person])
+        Foo = create_pydantic_model_from_func(foo, "Foo", nested_models=[Person])
 
         self.assertEqual(
             Foo.model_json_schema(),
@@ -92,7 +92,7 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-        Bar = create_pydantic_model_from_func(bar, "Bar", models=[Persons])
+        Bar = create_pydantic_model_from_func(bar, "Bar", nested_models=[Persons])
 
         self.assertEqual(
             Bar.model_json_schema(),

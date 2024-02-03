@@ -9,12 +9,12 @@ def create_pydantic_model_from_func(
     func: Callable,
     model_name: str,
     base_model: Type[BaseModel] = BaseModel,
-    models=None,  # models: Optional pydantic models needed for the pydantic model from function signature
+    nested_models=None,  # models: Optional pydantic models needed for the pydantic model from function signature
     override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg.
     ignored_params=None,  # ignored_params: Optional list of parameters to ignore.
 ):
-    if models is None:
-        models = []
+    if nested_models is None:
+        nested_models = []
 
     # Retrieve function signature details
     """
@@ -65,7 +65,7 @@ def create_pydantic_model_from_func(
     params = {}
 
     if override_params is None:
-        models_dict = {model.__name__: model for model in models}
+        models_dict = {model.__name__: model for model in nested_models}
         for param, default in zip(args, defaults):
             annotation = annotations.get(param, Any)
             annotation = models_dict.get(annotation, annotation)

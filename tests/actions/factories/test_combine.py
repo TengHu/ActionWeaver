@@ -19,7 +19,7 @@ class TestCase(unittest.TestCase):
             return b
 
         combined_action = combine([func, bar], description="docstring")
-        self.assertEqual(combined_action.user_method.__name__, "combine_func1_func2")
+        self.assertEqual(combined_action.function.__name__, "combine_func1_func2")
         self.assertEqual(combined_action.name, "Combine_Func1_Func2")
         self.assertEqual(combined_action.description, "docstring")
 
