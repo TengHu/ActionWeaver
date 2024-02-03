@@ -30,8 +30,9 @@ class TestCase(unittest.TestCase):
         self.assertEqual(action.name, "Func1")
         self.assertEqual(action.stop, True)
         self.assertEqual(action.description, "Extract Place model")
+
         self.assertEqual(
-            action(**{"place": {"lat": 23, "lng": 23, "description": "description"}}),
+            action(**{"lat": 23, "lng": 23, "description": "description"}),
             TestCase.Place(lat=23.0, lng=23.0, description="description"),
         )
 
@@ -47,11 +48,7 @@ class TestCase(unittest.TestCase):
 
         self.assertEqual(
             action(
-                **{
-                    "places": {
-                        "places": [{"lat": 23, "lng": 23, "description": "description"}]
-                    }
-                }
+                **{"places": [{"lat": 23, "lng": 23, "description": "description"}]}
             ),
             TestCase.Places(
                 places=[TestCase.Place(lat=23.0, lng=23.0, description="description")]
@@ -75,7 +72,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(action.stop, True)
         self.assertEqual(action.description, "Extract Place model")
         self.assertEqual(
-            action(**{"place": {"lat": 23, "lng": 23, "description": "description"}}),
+            action(**{"lat": 23, "lng": 23, "description": "description"}),
             TestCase.Place(lat=23.0, lng=23.0, description="description"),
         )
 
@@ -94,17 +91,14 @@ class TestCase(unittest.TestCase):
         self.assertEqual(action.description, "Extract Places model")
 
         actual = action(
-            **{
-                "places": {
-                    "places": [{"lat": 23, "lng": 23, "description": "description"}]
-                }
-            }
+            **{"places": [{"lat": 23, "lng": 23, "description": "description"}]}
         )
 
         # This test verify that the decorator is not incorporated into the pydantic model
         self.assertTrue(
             action.json_schema()["properties"], {"places": {"$ref": "#/$defs/Places"}}
         )
+
         self.assertEqual(
             action.json_schema()["$defs"],
             {
@@ -118,20 +112,7 @@ class TestCase(unittest.TestCase):
                     "required": ["lat", "lng", "description"],
                     "title": "Place",
                     "type": "object",
-                },
-                "Places": {
-                    "description": "A geo location",
-                    "properties": {
-                        "places": {
-                            "items": {"$ref": "#/$defs/Place"},
-                            "title": "Places",
-                            "type": "array",
-                        }
-                    },
-                    "required": ["places"],
-                    "title": "Places",
-                    "type": "object",
-                },
+                }
             },
         )
         self.assertEqual(len(actual), 2)
