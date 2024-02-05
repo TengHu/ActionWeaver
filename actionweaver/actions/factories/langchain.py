@@ -15,11 +15,14 @@ def action_from_tool(
     description = description or tool.description
 
     act = Action(
-        name, tool._run, description=description, decorators=decorators, stop=stop
+        name=name,
+        function=tool._run,
+        pydantic_model=create_pydantic_model_from_func(
+            tool.name.upper(), tool._run, ignored_params=["run_manager"]
+        ),
+        stop=stop,
+        decorators=decorators,
+        description=description,
     )
 
-    # Ignore the run_manager parameter
-    act.pydantic_model = create_pydantic_model_from_func(
-        tool._run, name, ignored_params=["run_manager"]
-    )
     return act

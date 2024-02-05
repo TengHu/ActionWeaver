@@ -1,10 +1,8 @@
 from typing import List
 
 from actionweaver.actions import Action
-from actionweaver.actions.factories.function import (
-    action,
-    create_pydantic_model_from_function,
-)
+from actionweaver.actions.factories.function import action
+from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
 def repeat(
@@ -50,8 +48,10 @@ def repeat(
 
     return action(
         name=name,
-        pydantic_model=create_pydantic_model_from_function(
-            func, override_params={act.name: (List[act.pydantic_model], ...)}
+        pydantic_model=create_pydantic_model_from_func(
+            func.__name__.title(),
+            func,
+            override_params={act.name: (List[act.pydantic_model], ...)},
         ),
         stop=act.stop,
     )(func)

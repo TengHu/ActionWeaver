@@ -255,8 +255,8 @@ class OpenAIChatCompletion:
                     )
 
                 action_handler, orch = OpenAIChatCompletion.build_orch(actions, orch)
-
                 response = None
+
                 tools = Tools.from_expr(orch[DEFAULT_ACTION_SCOPE])
 
                 while True:

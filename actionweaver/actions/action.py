@@ -35,7 +35,7 @@ class Action:
             raise ActionException(
                 f"Decorated method under action {name} must have a docstring for description."
             )
-        self.description = function.__doc__ or description
+        self.description = description or function.__doc__
 
         self.pydantic_model = pydantic_model
 
@@ -59,7 +59,6 @@ class Action:
         self.__doc__ = self.function.__doc__
 
     def json_schema(self):
-        # TODO: explore better schema
         return self.pydantic_model.model_json_schema()
 
     def invoke(
