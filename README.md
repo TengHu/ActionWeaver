@@ -47,6 +47,15 @@ pip install actionweaver
 ```
 
 ## Quickstart
+For a rapid comprehension of building applications with ActionWeaver, please take a look at the notebooks listed below.
+- [QuickStart](docs/source/notebooks/cookbooks/quickstart.ipynb)
+- [Logging & Tracing](docs/source/notebooks/cookbooks/logging.ipynb)
+- [Structured Extraction](docs/source/notebooks/cookbooks/structured_extraction.ipynb)
+- [Action Orchestration](docs/source/notebooks/cookbooks/orchestration.ipynb)
+- [Stateful Agent](docs/source/notebooks/cookbooks/stateful_agent.ipynb)
+- [Parallel Function Calling](docs/source/notebooks/cookbooks/parallel_tools.ipynb)
+
+
 Use the **LATEST** OpenAI API that supports parallel function calling !
 ```python
 from actionweaver.llms import patch

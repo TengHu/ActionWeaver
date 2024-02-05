@@ -9,11 +9,8 @@ from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 def create_pydantic_model_from_function(
     function,
-    nested_models=None,
     override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg of decorated method.
 ):
-    if nested_models is None:
-        nested_models = []
 
     return create_pydantic_model_from_func(
         function.__name__.title(),
@@ -26,8 +23,8 @@ def action(
     name,
     pydantic_model=None,
     logger=None,
-    nested_models=[],
     stop=False,
+    description=None,
     decorators: List[Callable[..., None]] = [],
     logging_metadata: Optional[dict] = None,
     logging_level=logging.INFO,
@@ -42,12 +39,14 @@ def action(
             pydantic_model=(
                 pydantic_model
                 if pydantic_model
-                else create_pydantic_model_from_function(
-                    function, nested_models=nested_models
+                else create_pydantic_model_from_func(
+                    function.__name__.title(),
+                    function,
                 )
             ),
             stop=stop,
             decorators=decorators,
+            description=description,
             logger=_logger,
             logging_metadata=logging_metadata,
             logging_level=logging_level,

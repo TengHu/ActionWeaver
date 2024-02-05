@@ -2,10 +2,8 @@ import collections
 from typing import List
 
 from actionweaver.actions import Action
-from actionweaver.actions.factories.function import (
-    action,
-    create_pydantic_model_from_function,
-)
+from actionweaver.actions.factories.function import action
+from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
 def combine(
@@ -51,7 +49,7 @@ def combine(
 
     return action(
         name=name.title(),
-        pydantic_model=create_pydantic_model_from_function(
-            func, override_params=params
+        pydantic_model=create_pydantic_model_from_func(
+            func.__name__.title(), func, override_params=params
         ),
     )(func)
