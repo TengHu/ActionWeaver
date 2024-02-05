@@ -50,8 +50,6 @@ def create_pydantic_model_from_func_v0(
         annotations,
     ) = getfullargspec(func)
 
-    # TODO: use signature ?
-
     if len(args) > 0 and args[0] == "self":
         args = args[1:]  # skip self
 
