@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
@@ -18,9 +16,8 @@ def create_pydantic_model_from_function(
         nested_models = []
 
     return create_pydantic_model_from_func(
-        function,
         function.__name__.title(),
-        nested_models=nested_models,
+        function,
         override_params=override_params,
     )
 
