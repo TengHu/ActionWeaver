@@ -21,6 +21,15 @@ Feel free to get in touch! Contact us at niel.hu@actionweaverai.com
 
 ---
 
+To quickly become familiar with ActionWeaver, please take a look at notebooks listed below.
+- [QuickStart](docs/source/notebooks/cookbooks/quickstart.ipynb)
+- [Structured Extraction](docs/source/notebooks/cookbooks/structured_extraction.ipynb)
+- [Action Orchestration](docs/source/notebooks/cookbooks/orchestration.ipynb)
+- [Stateful Agent](docs/source/notebooks/cookbooks/stateful_agent.ipynb)
+- [Parallel Function Calling](docs/source/notebooks/cookbooks/parallel_tools.ipynb)
+  
+---
+
 [Star us on Github!](https://github.com/TengHu/ActionWeaver)
 
 ActionWeaver is an AI application framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
@@ -45,15 +54,6 @@ You can install ActionWeaver using pip:
 ```python
 pip install actionweaver
 ```
-
-To quickly grasp building applications with ActionWeaver, refer to the notebooks listed below.
-- [QuickStart](docs/source/notebooks/cookbooks/quickstart.ipynb)
-- [Logging & Tracing](docs/source/notebooks/cookbooks/logging.ipynb)
-- [Structured Extraction](docs/source/notebooks/cookbooks/structured_extraction.ipynb)
-- [Action Orchestration](docs/source/notebooks/cookbooks/orchestration.ipynb)
-- [Stateful Agent](docs/source/notebooks/cookbooks/stateful_agent.ipynb)
-- [Parallel Function Calling](docs/source/notebooks/cookbooks/parallel_tools.ipynb)
-
 ## Quickstart
 
 Use the **LATEST** OpenAI API that supports parallel function calling !
