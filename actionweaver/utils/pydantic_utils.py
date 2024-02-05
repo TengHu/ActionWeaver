@@ -136,7 +136,7 @@ def create_pydantic_model_from_func(
     model_name: str,
     func: Callable,
     base_model: Type[BaseModel] = BaseModel,
-    config: ConfigDict = None,
+    config: ConfigDict | None = None,
     validators: Dict[str, classmethod] = None,
     override_params: Dict[str, Any] = None,
     ignored_params: List[str] = None,
