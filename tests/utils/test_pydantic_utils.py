@@ -1,20 +1,22 @@
-from __future__ import annotations
-
 import functools
 import unittest
+from typing import Literal, Union
 
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, Discriminator, Field, Tag, validate_call
+from typing_extensions import Annotated
 
 from actionweaver.utils.cache import cache, lru_cache, preserve_original_signature
 from actionweaver.utils.pydantic_utils import create_pydantic_model_from_func
 
 
 class UtilsTestCase(unittest.TestCase):
-    def test_create_pydantic_model_from_func(self):
+    def test_create_pydantic_model_from_func1(self):
+        """Test create_pydantic_model_from_func with a simple function"""
+
         def foo(bar1: int, bar2: int, bar3: str = "qux"):
             pass
 
-        Foo = create_pydantic_model_from_func(foo, "Foo")
+        Foo = create_pydantic_model_from_func("Foo", foo)
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -33,7 +35,7 @@ class UtilsTestCase(unittest.TestCase):
         def foo(self, bar1: int, bar2: int, bar3: str = "qux"):
             pass
 
-        Foo = create_pydantic_model_from_func(foo, "Foo")
+        Foo = create_pydantic_model_from_func("Foo", foo)
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -48,7 +50,9 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-    def test_create_pydantic_model_from_func_with_pydantic_argument(self):
+    def test_create_pydantic_model_from_func2(self):
+        """Test create_pydantic_model_from_func with a function that has a pydantic argument"""
+
         class Person(BaseModel):
             first_name: str
             last_name: str
@@ -58,13 +62,13 @@ class UtilsTestCase(unittest.TestCase):
         class Persons(BaseModel):
             persons: list[Person]
 
-        def foo(a: int, person: Person):
-            pass
-
         def bar(a: int, persons: Persons):
             pass
 
-        Foo = create_pydantic_model_from_func(foo, "Foo", nested_models=[Person])
+        def foo(a: int, person: Person):
+            pass
+
+        Foo = create_pydantic_model_from_func("Foo", foo)
 
         self.assertEqual(
             Foo.model_json_schema(),
@@ -92,7 +96,7 @@ class UtilsTestCase(unittest.TestCase):
             },
         )
 
-        Bar = create_pydantic_model_from_func(bar, "Bar", nested_models=[Persons])
+        Bar = create_pydantic_model_from_func("Bar", bar)
 
         self.assertEqual(
             Bar.model_json_schema(),
@@ -138,7 +142,7 @@ class UtilsTestCase(unittest.TestCase):
             """foo"""
             pass
 
-        Foo = create_pydantic_model_from_func(foo1, "Foo")
+        Foo = create_pydantic_model_from_func("Foo", foo1)
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -158,7 +162,7 @@ class UtilsTestCase(unittest.TestCase):
             """foo"""
             pass
 
-        Foo = create_pydantic_model_from_func(foo2, "Foo")
+        Foo = create_pydantic_model_from_func("Foo", foo2)
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -190,7 +194,7 @@ class UtilsTestCase(unittest.TestCase):
             """foo"""
             pass
 
-        Foo = create_pydantic_model_from_func(foo3, "Foo")
+        Foo = create_pydantic_model_from_func("Foo", foo3)
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -222,7 +226,7 @@ class UtilsTestCase(unittest.TestCase):
             pass
 
         Foo = create_pydantic_model_from_func(
-            foo, "Foo", override_params={"a": (int, ...), "person": (Person, ...)}
+            "Foo", foo, override_params={"a": (int, ...), "person": (Person, ...)}
         )
 
         self.assertEqual(
@@ -252,7 +256,7 @@ class UtilsTestCase(unittest.TestCase):
         )
 
         Bar = create_pydantic_model_from_func(
-            bar, "Bar", override_params={"a": (int, ...), "persons": (Persons, ...)}
+            "Bar", bar, override_params={"a": (int, ...), "persons": (Persons, ...)}
         )
 
         self.assertEqual(
@@ -300,7 +304,7 @@ class UtilsTestCase(unittest.TestCase):
         def bar(a, b, c=2):
             pass
 
-        Foo = create_pydantic_model_from_func(foo, "Foo", ignored_params=["a"])
+        Foo = create_pydantic_model_from_func("Foo", foo, ignored_params=["a"])
         self.assertEqual(
             Foo.model_json_schema(),
             {
@@ -310,13 +314,107 @@ class UtilsTestCase(unittest.TestCase):
                 "type": "object",
             },
         )
-        Bar = create_pydantic_model_from_func(bar, "Bar", ignored_params=["b", "c"])
+        Bar = create_pydantic_model_from_func("Bar", bar, ignored_params=["b", "c"])
         self.assertEqual(
             Bar.model_json_schema(),
             {
                 "properties": {"a": {"title": "A"}},
                 "required": ["a"],
                 "title": "Bar",
+                "type": "object",
+            },
+        )
+
+    def test_create_pydantic_model_from_func_with_field_annotation1(self):
+
+        @validate_call
+        def how_many(num: Annotated[int, Field(gt=10)]):
+            return num
+
+        HowMany = create_pydantic_model_from_func(
+            "HowMany",
+            how_many,
+        )
+
+        self.assertEqual(
+            HowMany.model_json_schema(),
+            {
+                "properties": {
+                    "num": {"exclusiveMinimum": 10, "title": "Num", "type": "integer"}
+                },
+                "title": "HowMany",
+                "type": "object",
+            },
+        )
+
+    def test_create_pydantic_model_from_func_with_field_annotation2(self):
+
+        class Cat(BaseModel):
+            pet_type: Literal["cat"]
+            age: int
+
+        class Dog(BaseModel):
+            pet_kind: Literal["dog"]
+            age: int
+
+        def pet_discriminator(v):
+            if isinstance(v, dict):
+                return v.get("pet_type", v.get("pet_kind"))
+            return getattr(v, "pet_type", getattr(v, "pet_kind", None))
+
+        class Model(BaseModel):
+            pet: Union[Annotated[Cat, Tag("cat")], Annotated[Dog, Tag("dog")]] = Field(
+                discriminator=Discriminator(pet_discriminator)
+            )
+
+        def foo(model: Model):
+            pass
+
+        Foo = create_pydantic_model_from_func(
+            "Foo",
+            foo,
+        )
+
+        self.assertEqual(
+            Foo.model_json_schema(),
+            {
+                "$defs": {
+                    "Cat": {
+                        "properties": {
+                            "pet_type": {"const": "cat", "title": "Pet Type"},
+                            "age": {"title": "Age", "type": "integer"},
+                        },
+                        "required": ["pet_type", "age"],
+                        "title": "Cat",
+                        "type": "object",
+                    },
+                    "Dog": {
+                        "properties": {
+                            "pet_kind": {"const": "dog", "title": "Pet Kind"},
+                            "age": {"title": "Age", "type": "integer"},
+                        },
+                        "required": ["pet_kind", "age"],
+                        "title": "Dog",
+                        "type": "object",
+                    },
+                    "Model": {
+                        "properties": {
+                            "pet": {
+                                "oneOf": [
+                                    {"$ref": "#/$defs/Cat"},
+                                    {"$ref": "#/$defs/Dog"},
+                                ],
+                                "title": "Pet",
+                            }
+                        },
+                        "required": ["pet"],
+                        "title": "Model",
+                        "type": "object",
+                    },
+                },
+                "properties": {"model": {"$ref": "#/$defs/Model"}},
+                "required": ["model"],
+                "title": "Foo",
                 "type": "object",
             },
         )

@@ -43,8 +43,8 @@ class TestAction(unittest.TestCase):
 
     def test_action_with_decorators_method1(self):
         def add_one(func):
-            @functools.wraps(func)
             def wrapper(another_num: int):
+                """Add one to the result of the function"""
                 return func(another_num) + 1
 
             return wrapper
@@ -56,13 +56,16 @@ class TestAction(unittest.TestCase):
             return num
 
         assert mock_method(1) == 2
+
         # This test verify that the decorator is incorporated into the pydantic model
         self.assertEqual(
             mock_method.json_schema(),
             {
-                "properties": {"another_num": {"title": "Another Num"}},
+                "properties": {
+                    "another_num": {"title": "Another Num", "type": "integer"}
+                },
                 "required": ["another_num"],
-                "title": "Mock_Method",
+                "title": "Wrapper",
                 "type": "object",
             },
         )

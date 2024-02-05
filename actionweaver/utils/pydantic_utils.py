@@ -1,23 +1,37 @@
+import inspect
+import typing
 from inspect import getfullargspec
-from typing import Any, Callable, Type
+from typing import Any, Callable, Dict, List, Type
 
 from pydantic import BaseModel, create_model
+from pydantic.config import ConfigDict
 
 
-# Inspired by https://github.com/pydantic/pydantic/issues/1391
-def create_pydantic_model_from_func(
+def create_pydantic_model_from_func_v0(
     func: Callable,
     model_name: str,
     base_model: Type[BaseModel] = BaseModel,
+    config: ConfigDict | None = None,
+    validators: dict[str, classmethod] | None = None,
     nested_models=None,  # models: Optional pydantic models needed for the pydantic model from function signature
     override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg.
     ignored_params=None,  # ignored_params: Optional list of parameters to ignore.
 ):
+    """
+    This function is inspired by https://github.com/pydantic/pydantic/issues/1391
+
+
+    Documentation:
+    -------------
+    1. https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
+
+    """
     if nested_models is None:
         nested_models = []
 
-    # Retrieve function signature details
     """
+    Retrieve function signature details
+    
     - args is a list of the positional parameter names.
     - varargs is the name of the * parameter or None if arbitrary positional arguments are not accepted.
     - varkw is the name of the ** parameter or None if arbitrary keyword arguments are not accepted.
@@ -86,17 +100,98 @@ def create_pydantic_model_from_func(
             if key not in ignored_params
         }
 
-    # Configure the class to allow extra parameters if **kwargs is in the function signature
-    class Config:
-        extra = "allow"
+    # # Configure the class to allow extra parameters if **kwargs is in the function signature
+    # class Config:
+    #     extra = "allow"
 
-    config = Config if varkw else None
+    if config:
+        return create_model(
+            model_name,
+            **params,
+            **keyword_only_params,
+            __config__=config,
+            __validators__=validators,
+        )
+    else:
+        return create_model(
+            model_name,
+            **params,
+            **keyword_only_params,
+            __base__=base_model,
+            __validators__=validators,
+        )
 
-    # Create and return the pydantic model using the gathered parameters, configurations, and base model
-    return create_model(
-        model_name,
-        **params,
-        **keyword_only_params,
-        __base__=base_model,
-        # __config__=config,
-    )
+
+def convert_default(val):
+    default_mapping = {inspect._empty: Ellipsis}
+    return default_mapping.get(val, val)
+
+
+def convert_annotation(val):
+    annotation_mapping = {inspect._empty: Any}
+    return annotation_mapping.get(val, val)
+
+
+def create_pydantic_model_from_func(
+    model_name: str,
+    func: Callable,
+    base_model: Type[BaseModel] = BaseModel,
+    config: ConfigDict | None = None,
+    validators: Dict[str, classmethod] = None,
+    override_params: Dict[str, Any] = None,
+    ignored_params: List[str] = None,
+):
+    """
+    Create a Pydantic model from a function signature.
+
+    If inspect signature return string for imported methods, consider removing `from __future__ import annotations`
+    Documentation:
+    -------------
+    1. https://docs.pydantic.dev/latest/concepts/models/#dynamic-model-creation
+    2. https://github.com/pydantic/pydantic/issues/1391
+    """
+
+    # Retrieve function signature details using inspect.signature
+    signature = inspect.signature(func)
+    parameters = list(signature.parameters.values())
+
+    # Filter out 'self' if present
+    params = {param.name: param for param in parameters if param.name != "self"}
+
+    # Convert to a dictionary of parameter names and their annotations and defaults
+    params = {
+        name: (convert_annotation(param.annotation), convert_default(param.default))
+        for name, param in params.items()
+    }
+
+    # Use override_params instead
+    if override_params:
+        params = override_params
+
+    # Remove ignored params
+    if ignored_params:
+        params = {
+            key: value for key, value in params.items() if key not in ignored_params
+        }
+
+    # (Deprecated) Convert annotations to pydantic models if needed
+    # if supporting_annotation_models:
+    #     models_dict = {model.__name__: model for model in supporting_annotation_models}
+    #     for name, (annotation, default) in params.items():
+    #         annotation = models_dict.get(annotation, annotation)
+    #         params[name] = (annotation, default)
+
+    if config:
+        return create_model(
+            model_name,
+            **params,
+            __config__=config,
+            __validators__=validators,
+        )
+    else:
+        return create_model(
+            model_name,
+            **params,
+            __base__=base_model,
+            __validators__=validators,
+        )
