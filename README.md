@@ -23,7 +23,7 @@ Feel free to get in touch! Contact us at niel.hu@actionweaverai.com
 
 To quickly become familiar with ActionWeaver, please take a look at notebooks listed below.
 - [QuickStart](docs/source/notebooks/cookbooks/quickstart.ipynb)
-- [Structured Extraction](docs/source/notebooks/cookbooks/structured_extraction.ipynb)
+- [Using Pydantic for Structured Data Parsing and Validation](docs/source/notebooks/cookbooks/pydantic.ipynb)
 - [Action Orchestration](docs/source/notebooks/cookbooks/orchestration.ipynb)
 - [Stateful Agent](docs/source/notebooks/cookbooks/stateful_agent.ipynb)
 - [Parallel Function Calling](docs/source/notebooks/cookbooks/parallel_tools.ipynb)
