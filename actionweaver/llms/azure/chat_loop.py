@@ -6,17 +6,15 @@ import logging
 import time
 import uuid
 from itertools import chain
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from openai import AsyncAzureOpenAI, AzureOpenAI, Stream
-from openai.types.chat.chat_completion_message import (
-    ChatCompletionMessage,
-    FunctionCall,
-)
+from openai import Stream
+from openai.types.chat.chat_completion_message import FunctionCall
 
+import actionweaver.llms.loop_action as la
 from actionweaver.actions.action import Action, ActionHandlers
 from actionweaver.llms.azure.functions import Functions
-from actionweaver.llms.utils import ActionForLLMResponse, Continue, ReturnRightAway
+from actionweaver.llms.exception_handler import ChatLoopInfo, ExceptionHandler
 from actionweaver.telemetry import traceable
 from actionweaver.utils import DEFAULT_ACTION_SCOPE
 from actionweaver.utils.stream import get_first_element_and_iterator
@@ -185,6 +183,7 @@ def create_chat_loop(original_create_method):
         logging_name: Optional[str] = None,
         logging_metadata: Optional[dict] = None,
         logging_level=logging.INFO,
+        exception_handler: ExceptionHandler = None,
         **kwargs,
     ):
         DEFAULT_LOGGING_NAME = "actionweaver_initial_chat_completion"
@@ -221,34 +220,58 @@ def create_chat_loop(original_create_method):
             functions = Functions.from_expr(orch[DEFAULT_ACTION_SCOPE])
 
             while True:
+
                 function_argument = functions.to_arguments()
-                if functions:
-                    api_response = chat_completion_create_method(
-                        *args,
-                        **kwargs,
-                        **function_argument,
+                chat_loop_action = la.Unknown
+
+                try:
+                    if functions:
+                        api_response = chat_completion_create_method(
+                            *args,
+                            **kwargs,
+                            **function_argument,
+                        )
+                    else:
+                        api_response = chat_completion_create_method(
+                            *args,
+                            **kwargs,
+                        )
+
+                    chat_loop_action = handle_response(
+                        api_response,
+                        token_usage_tracker,
+                        messages,
+                        model,
+                        functions,
+                        orch,
+                        action_handler,
+                        logger,
                     )
+                except Exception as e:
+
+                    if exception_handler:
+                        chat_loop_action = exception_handler.handle_exception(
+                            e,
+                            ChatLoopInfo(
+                                context={
+                                    "messages": messages,
+                                    "functions": functions,
+                                    "model": model,
+                                    "orch": orch,
+                                }
+                            ),
+                        )
+                    else:
+                        raise e
+
+                if isinstance(chat_loop_action, la.ReturnRightAway):
+                    return chat_loop_action.content
+                elif isinstance(chat_loop_action, la.Continue):
+                    functions = chat_loop_action.functions
                 else:
-                    api_response = chat_completion_create_method(
-                        *args,
-                        **kwargs,
+                    raise FunctionCallingLoopException(
+                        f"Unsupported chat loop action: {chat_loop_action}"
                     )
-
-                action_for_llm_response = handle_response(
-                    api_response,
-                    token_usage_tracker,
-                    messages,
-                    model,
-                    functions,
-                    orch,
-                    action_handler,
-                    logger,
-                )
-
-                if isinstance(action_for_llm_response, ReturnRightAway):
-                    return action_for_llm_response.val
-                elif isinstance(action_for_llm_response, Continue):
-                    functions = action_for_llm_response.functions
 
         if logger:
             return traceable(
@@ -296,7 +319,7 @@ def handle_response(
     orch,
     action_handler,
     logger=None,
-) -> ActionForLLMResponse:
+) -> la.LoopAction:
     # logic to handle streaming API response
     processed_stream_response = None
     if isinstance(api_response, Stream):
@@ -321,9 +344,9 @@ def handle_response(
             action_handler,
         )
         if stop:
-            return ReturnRightAway(val=resp)
+            return la.ReturnRightAway(content=resp)
         else:
-            return Continue(functions=functions)
+            return la.Continue(functions=functions)
     else:
         choice = api_response.choices[0]
         message = choice.message
@@ -341,9 +364,9 @@ def handle_response(
                 action_handler,
             )
             if stop:
-                return ReturnRightAway(val=resp)
+                return la.ReturnRightAway(content=resp)
             else:
-                return Continue(functions=functions)
+                return la.Continue(functions=functions)
         elif message.content is not None:
             # ignore last message in the function loop
             # messages += [{"role": "assistant", "content": message["content"]}]
@@ -355,7 +378,7 @@ def handle_response(
 
                 See https://platform.openai.com/docs/guides/gpt/chat-completions-api for details.
                 """
-                return ReturnRightAway(val=api_response)
+                return la.ReturnRightAway(content=api_response)
         else:
             raise FunctionCallingLoopException(
                 f"Unsupported response from OpenAI api: {api_response}"
