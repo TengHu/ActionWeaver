@@ -1,6 +1,6 @@
-from typing import Any, Union
+from typing import Any
 
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel
 
 
 class LoopAction(BaseModel):
