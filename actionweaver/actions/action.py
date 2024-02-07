@@ -65,7 +65,7 @@ class Action:
         self,
         client=None,
         force=True,
-        logger=logging.getLogger(__name__),
+        logger=None,
         token_usage_tracker=None,
         *args,
         **kwargs,

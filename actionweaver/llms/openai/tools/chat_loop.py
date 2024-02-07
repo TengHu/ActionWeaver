@@ -63,9 +63,8 @@ def invoke_tool(
                 arguments = json.loads(tool_call["function"]["arguments"])
             except json.decoder.JSONDecodeError as e:
                 raise FunctionCallingLoopException(
-                    e,
+                    f"Failed to parse function call arguments from OpenAI response",
                     extra_info={
-                        "message": "Parsing function call arguments from OpenAI response ",
                         "arguments": tool_call["function"]["arguments"],
                         "timestamp": time.time(),
                         "model": model,
@@ -88,10 +87,13 @@ def invoke_tool(
             ]
 
         else:
-            # TODO: allow user to add callback for unavailable tool
-            unavailable_tool_msg = f"{name} is not a valid tool name, use one of the following: {', '.join([tool['function']['name'] for tool in tools.tools])}"
-
-            raise FunctionCallingLoopException(unavailable_tool_msg)
+            raise FunctionCallingLoopException(
+                f"{name} is not a valid function name",
+                extra_info={
+                    "timestamp": time.time(),
+                    "model": model,
+                },
+            )
 
     if len(called_tools) == 1:
         # Update new functions for next OpenAI api call

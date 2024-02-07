@@ -124,9 +124,8 @@ def invoke_function(
             arguments = json.loads(function_call["arguments"])
         except json.decoder.JSONDecodeError as e:
             raise FunctionCallingLoopException(
-                e,
+                "Parsing function call arguments from OpenAI response failed",
                 extra_info={
-                    "message": "Parsing function call arguments from OpenAI response ",
                     "arguments": function_call["arguments"],
                     "timestamp": time.time(),
                     "model": model,
@@ -157,14 +156,13 @@ def invoke_function(
             (stop, function_response),
         )
     else:
-        unavailable_function_msg = f"{name} is not a valid function name, use one of the following: {', '.join([func['name'] for func in functions.functions])}"
-        messages += [
-            {
-                "role": "user",
-                "content": unavailable_function_msg,
-            }
-        ]
-        return functions, (False, None)
+        raise FunctionCallingLoopException(
+            f"{name} is not a valid function name",
+            extra_info={
+                "timestamp": time.time(),
+                "model": model,
+            },
+        )
 
 
 def validate_orch(orch):
