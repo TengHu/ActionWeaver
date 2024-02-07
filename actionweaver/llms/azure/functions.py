@@ -45,3 +45,6 @@ class Functions:
             "functions": self.functions,
             "function_call": self.function_call,
         }
+
+    def __bool__(self):
+        return bool(self.functions)

@@ -70,8 +70,19 @@ class Action:
         *args,
         **kwargs,
     ):
+        from actionweaver.llms.wrapper import LLMClientWrapper
+
         if type(client) in (OpenAI, AzureOpenAI):
             return client.chat.completions.create(
+                actions=[self],
+                orch={DEFAULT_ACTION_SCOPE: self, self.name: None} if force else None,
+                logger=logger,
+                token_usage_tracker=token_usage_tracker,
+                *args,
+                **kwargs,
+            )
+        elif type(client) == LLMClientWrapper:
+            return client.create(
                 actions=[self],
                 orch={DEFAULT_ACTION_SCOPE: self, self.name: None} if force else None,
                 logger=logger,
@@ -142,7 +153,7 @@ class InstanceAction(Action):
         stop=False,
         instance=None,
     ):
-        super().__init__(name, function, stop=stop, logger=logger)
+        super().__init__(name, function, pydantic_model, stop=stop, logger=logger)
         self.instance = instance
         self.pydantic_model = pydantic_model
 

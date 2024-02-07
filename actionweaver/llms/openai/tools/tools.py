@@ -59,3 +59,6 @@ class Tools:
             "tools": self.tools,
             "tool_choice": self.tool_choice,
         }
+
+    def __bool__(self):
+        return bool(self.tools)
