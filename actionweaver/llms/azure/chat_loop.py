@@ -276,6 +276,16 @@ def argument_check(
             "model keyword argument is required for chat completion"
         )
 
+    if "functions" in kwargs:
+        raise FunctionCallingLoopException(
+            "functions keyword argument is not allowed for this method, use actions instead"
+        )
+
+    if "function_call" in kwargs:
+        raise FunctionCallingLoopException(
+            "function_call keyword argument is not allowed for this method, use actions instead"
+        )
+
 
 def handle_response(
     api_response,

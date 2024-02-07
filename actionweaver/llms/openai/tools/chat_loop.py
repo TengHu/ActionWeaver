@@ -280,6 +280,16 @@ def argument_check(
             "model keyword argument is required for chat completion"
         )
 
+    if "tools" in kwargs:
+        raise FunctionCallingLoopException(
+            "tools keyword argument is not allowed for this method, use actions instead"
+        )
+
+    if "tool_choice" in kwargs:
+        raise FunctionCallingLoopException(
+            "tool_choice keyword argument is not allowed for this method, use actions instead"
+        )
+
 
 def handle_response(
     api_response,
