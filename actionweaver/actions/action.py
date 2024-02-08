@@ -70,7 +70,7 @@ class Action:
         *args,
         **kwargs,
     ):
-        from actionweaver.llms.wrapper import LLMClientWrapper
+        from actionweaver.llms.wrapper import ActionWeaverLLMClientWrapper
 
         if type(client) in (OpenAI, AzureOpenAI):
             return client.chat.completions.create(
@@ -81,7 +81,7 @@ class Action:
                 *args,
                 **kwargs,
             )
-        elif type(client) == LLMClientWrapper:
+        elif type(client) == ActionWeaverLLMClientWrapper:
             return client.create(
                 actions=[self],
                 orch={DEFAULT_ACTION_SCOPE: self, self.name: None} if force else None,

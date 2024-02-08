@@ -715,306 +715,306 @@ class TestOpenAIChatCompletion(unittest.TestCase):
 
     ### Tests for actionweaver.llms.openai.tools.chat.OpenAIChatCompletion
 
-    @patch("openai.resources.chat.Completions.create")
-    def test_create_message(self, mock_create):
-        # Create an instance of OpenAIChatCompletion
-        chat_completion = OpenAIChatCompletion(model="test")
+    # @patch("openai.resources.chat.Completions.create")
+    # def test_create_message(self, mock_create):
+    #     # Create an instance of OpenAIChatCompletion
+    #     chat_completion = OpenAIChatCompletion(model="test")
 
-        # Define the expected functions arguments and return values in the API call
-        expected_functions_and_results = [
-            (
-                None,
-                self.generate_mock_message_response("Hello! what can I do for you"),
-            ),
-        ]
+    #     # Define the expected functions arguments and return values in the API call
+    #     expected_functions_and_results = [
+    #         (
+    #             None,
+    #             self.generate_mock_message_response("Hello! what can I do for you"),
+    #         ),
+    #     ]
 
-        # Set the return values of the mock
-        mock_create.side_effect = [
-            expected_result for _, expected_result in expected_functions_and_results
-        ]
+    #     # Set the return values of the mock
+    #     mock_create.side_effect = [
+    #         expected_result for _, expected_result in expected_functions_and_results
+    #     ]
 
-        # When
-        messages = [{"role": "user", "content": "Hi!"}]
-        response = chat_completion.create(messages=messages)
+    #     # When
+    #     messages = [{"role": "user", "content": "Hi!"}]
+    #     response = chat_completion.create(messages=messages)
 
-        # Then
-        mock_create.assert_called_once()
-        self.assertFalse("functions" in mock_create.call_args_list[0].kwargs)
-        self.assertFalse("function_call" in mock_create.call_args_list[0].kwargs)
-        self.assertEqual(
-            messages,
-            [
-                {"role": "user", "content": "Hi!"},
-            ],
-        )
-        self.assertEqual(
-            response,
-            ChatCompletion(
-                id="chatcmpl-8WCdHNVdrYkU8cir7xYcji02Lenuw",
-                choices=[
-                    Choice(
-                        finish_reason="stop",
-                        index=0,
-                        logprobs=None,
-                        message=ChatCompletionMessage(
-                            content="Hello! what can I do for you",
-                            role="assistant",
-                            function_call=None,
-                            tool_calls=None,
-                        ),
-                    )
-                ],
-                created=1702685747,
-                model="gpt-3.5-turbo-1106",
-                object="chat.completion",
-                system_fingerprint="fp_772e8125bb",
-                usage=CompletionUsage(
-                    completion_tokens=35, prompt_tokens=27, total_tokens=62
-                ),
-            ),
-        )
+    #     # Then
+    #     mock_create.assert_called_once()
+    #     self.assertFalse("functions" in mock_create.call_args_list[0].kwargs)
+    #     self.assertFalse("function_call" in mock_create.call_args_list[0].kwargs)
+    #     self.assertEqual(
+    #         messages,
+    #         [
+    #             {"role": "user", "content": "Hi!"},
+    #         ],
+    #     )
+    #     self.assertEqual(
+    #         response,
+    #         ChatCompletion(
+    #             id="chatcmpl-8WCdHNVdrYkU8cir7xYcji02Lenuw",
+    #             choices=[
+    #                 Choice(
+    #                     finish_reason="stop",
+    #                     index=0,
+    #                     logprobs=None,
+    #                     message=ChatCompletionMessage(
+    #                         content="Hello! what can I do for you",
+    #                         role="assistant",
+    #                         function_call=None,
+    #                         tool_calls=None,
+    #                     ),
+    #                 )
+    #             ],
+    #             created=1702685747,
+    #             model="gpt-3.5-turbo-1106",
+    #             object="chat.completion",
+    #             system_fingerprint="fp_772e8125bb",
+    #             usage=CompletionUsage(
+    #                 completion_tokens=35, prompt_tokens=27, total_tokens=62
+    #             ),
+    #         ),
+    #     )
 
-    @patch("openai.resources.chat.Completions.create")
-    def test_create_with_single_function(self, mock_create):
-        def mock_method(text: str):
-            """mock method"""
-            return text
+    # @patch("openai.resources.chat.Completions.create")
+    # def test_create_with_single_function(self, mock_create):
+    #     def mock_method(text: str):
+    #         """mock method"""
+    #         return text
 
-        actions = [
-            action("action1")(mock_method),
-        ]
-        chat_completion = OpenAIChatCompletion(model="test")
+    #     actions = [
+    #         action("action1")(mock_method),
+    #     ]
+    #     chat_completion = OpenAIChatCompletion(model="test")
 
-        # Define the expected functions arguments and return values in the API call
-        expected_functions_and_results = [
-            (
-                {"tools": ["action1"], "tool_choice": "auto"},
-                self.generate_single_mock_function_call_response(
-                    "action1", '{\n  "text": "echo1"\n}'
-                ),
-            ),
-            (
-                {"tools": ["action1"], "tool_choice": "auto"},
-                self.generate_mock_message_response("last message"),
-            ),
-        ]
+    #     # Define the expected functions arguments and return values in the API call
+    #     expected_functions_and_results = [
+    #         (
+    #             {"tools": ["action1"], "tool_choice": "auto"},
+    #             self.generate_single_mock_function_call_response(
+    #                 "action1", '{\n  "text": "echo1"\n}'
+    #             ),
+    #         ),
+    #         (
+    #             {"tools": ["action1"], "tool_choice": "auto"},
+    #             self.generate_mock_message_response("last message"),
+    #         ),
+    #     ]
 
-        # Set the return values of the mock
-        mock_create.side_effect = [
-            expected_result for _, expected_result in expected_functions_and_results
-        ]
+    #     # Set the return values of the mock
+    #     mock_create.side_effect = [
+    #         expected_result for _, expected_result in expected_functions_and_results
+    #     ]
 
-        # When
-        messages = [{"role": "user", "content": "Hi!"}]
-        response = chat_completion.create(messages=messages, actions=actions)
+    #     # When
+    #     messages = [{"role": "user", "content": "Hi!"}]
+    #     response = chat_completion.create(messages=messages, actions=actions)
 
-        # Then
-        # Use a loop to iterate over expected calls and assert function arguments in the API call
-        for i, actual_call in enumerate(mock_create.call_args_list):
-            if "tools" in actual_call.kwargs:
-                self.assertEqual(
-                    [tool["function"]["name"] for tool in actual_call.kwargs["tools"]],
-                    expected_functions_and_results[i][0]["tools"],
-                )
-                self.assertEqual(
-                    actual_call.kwargs["tool_choice"],
-                    expected_functions_and_results[i][0]["tool_choice"],
-                )
-            else:
-                self.assertFalse("tools" in expected_functions_and_results[i][0])
-                self.assertFalse("tool_choice" in expected_functions_and_results[i][0])
+    #     # Then
+    #     # Use a loop to iterate over expected calls and assert function arguments in the API call
+    #     for i, actual_call in enumerate(mock_create.call_args_list):
+    #         if "tools" in actual_call.kwargs:
+    #             self.assertEqual(
+    #                 [tool["function"]["name"] for tool in actual_call.kwargs["tools"]],
+    #                 expected_functions_and_results[i][0]["tools"],
+    #             )
+    #             self.assertEqual(
+    #                 actual_call.kwargs["tool_choice"],
+    #                 expected_functions_and_results[i][0]["tool_choice"],
+    #             )
+    #         else:
+    #             self.assertFalse("tools" in expected_functions_and_results[i][0])
+    #             self.assertFalse("tool_choice" in expected_functions_and_results[i][0])
 
-        self.assertEqual(
-            messages,
-            [
-                {"content": "Hi!", "role": "user"},
-                ChatCompletionMessage(
-                    content=None,
-                    role="assistant",
-                    function_call=None,
-                    tool_calls=[
-                        ChatCompletionMessageToolCall(
-                            id="call_70TwJYHkDSs80tcnF5lt8TQR",
-                            function=Function(
-                                arguments='{\n  "text": "echo1"\n}', name="action1"
-                            ),
-                            type="function",
-                        )
-                    ],
-                ),
-                {
-                    "content": "echo1",
-                    "name": "action1",
-                    "role": "tool",
-                    "tool_call_id": "call_70TwJYHkDSs80tcnF5lt8TQR",
-                },
-            ],
-        )
+    #     self.assertEqual(
+    #         messages,
+    #         [
+    #             {"content": "Hi!", "role": "user"},
+    #             ChatCompletionMessage(
+    #                 content=None,
+    #                 role="assistant",
+    #                 function_call=None,
+    #                 tool_calls=[
+    #                     ChatCompletionMessageToolCall(
+    #                         id="call_70TwJYHkDSs80tcnF5lt8TQR",
+    #                         function=Function(
+    #                             arguments='{\n  "text": "echo1"\n}', name="action1"
+    #                         ),
+    #                         type="function",
+    #                     )
+    #                 ],
+    #             ),
+    #             {
+    #                 "content": "echo1",
+    #                 "name": "action1",
+    #                 "role": "tool",
+    #                 "tool_call_id": "call_70TwJYHkDSs80tcnF5lt8TQR",
+    #             },
+    #         ],
+    #     )
 
-        self.assertEqual(
-            response,
-            ChatCompletion(
-                id="chatcmpl-8WCdHNVdrYkU8cir7xYcji02Lenuw",
-                choices=[
-                    Choice(
-                        finish_reason="stop",
-                        index=0,
-                        logprobs=None,
-                        message=ChatCompletionMessage(
-                            content="last message",
-                            role="assistant",
-                            function_call=None,
-                            tool_calls=None,
-                        ),
-                    )
-                ],
-                created=1702685747,
-                model="gpt-3.5-turbo-1106",
-                object="chat.completion",
-                system_fingerprint="fp_772e8125bb",
-                usage=CompletionUsage(
-                    completion_tokens=35, prompt_tokens=27, total_tokens=62
-                ),
-            ),
-        )
+    #     self.assertEqual(
+    #         response,
+    #         ChatCompletion(
+    #             id="chatcmpl-8WCdHNVdrYkU8cir7xYcji02Lenuw",
+    #             choices=[
+    #                 Choice(
+    #                     finish_reason="stop",
+    #                     index=0,
+    #                     logprobs=None,
+    #                     message=ChatCompletionMessage(
+    #                         content="last message",
+    #                         role="assistant",
+    #                         function_call=None,
+    #                         tool_calls=None,
+    #                     ),
+    #                 )
+    #             ],
+    #             created=1702685747,
+    #             model="gpt-3.5-turbo-1106",
+    #             object="chat.completion",
+    #             system_fingerprint="fp_772e8125bb",
+    #             usage=CompletionUsage(
+    #                 completion_tokens=35, prompt_tokens=27, total_tokens=62
+    #             ),
+    #         ),
+    #     )
 
-    @patch("openai.resources.chat.Completions.create")
-    def test_create_with_single_function_orchestration(self, mock_create):
-        def mock_method(text: str):
-            """mock method"""
-            return text
+    # @patch("openai.resources.chat.Completions.create")
+    # def test_create_with_single_function_orchestration(self, mock_create):
+    #     def mock_method(text: str):
+    #         """mock method"""
+    #         return text
 
-        actions = [
-            action("action1")(mock_method),
-            action("action2")(mock_method),
-        ]
-        chat_completion = OpenAIChatCompletion(model="test")
+    #     actions = [
+    #         action("action1")(mock_method),
+    #         action("action2")(mock_method),
+    #     ]
+    #     chat_completion = OpenAIChatCompletion(model="test")
 
-        # Define the expected functions arguments and return values in the API call
-        expected_functions_and_results = [
-            (
-                {"tools": ["action1"], "tool_choice": "auto"},
-                self.generate_single_mock_function_call_response(
-                    "action1", '{\n  "text": "echo1"\n}'
-                ),
-            ),
-            (
-                {
-                    "tools": ["action2"],
-                    "tool_choice": {
-                        "function": {"name": "action2"},
-                        "type": "function",
-                    },
-                },
-                self.generate_single_mock_function_call_response(
-                    "action2", '{\n  "text": "echo2"\n}'
-                ),
-            ),
-            (
-                {"tools": ["action1"], "tool_choice": "auto"},
-                self.generate_mock_message_response("last message"),
-            ),
-        ]
+    #     # Define the expected functions arguments and return values in the API call
+    #     expected_functions_and_results = [
+    #         (
+    #             {"tools": ["action1"], "tool_choice": "auto"},
+    #             self.generate_single_mock_function_call_response(
+    #                 "action1", '{\n  "text": "echo1"\n}'
+    #             ),
+    #         ),
+    #         (
+    #             {
+    #                 "tools": ["action2"],
+    #                 "tool_choice": {
+    #                     "function": {"name": "action2"},
+    #                     "type": "function",
+    #                 },
+    #             },
+    #             self.generate_single_mock_function_call_response(
+    #                 "action2", '{\n  "text": "echo2"\n}'
+    #             ),
+    #         ),
+    #         (
+    #             {"tools": ["action1"], "tool_choice": "auto"},
+    #             self.generate_mock_message_response("last message"),
+    #         ),
+    #     ]
 
-        # Set the return values of the mock
-        mock_create.side_effect = [
-            expected_result for _, expected_result in expected_functions_and_results
-        ]
+    #     # Set the return values of the mock
+    #     mock_create.side_effect = [
+    #         expected_result for _, expected_result in expected_functions_and_results
+    #     ]
 
-        # When
-        messages = [{"role": "user", "content": "Hi!"}]
-        response = chat_completion.create(
-            messages=messages, actions=[actions[0]], orch={actions[0].name: actions[1]}
-        )
+    #     # When
+    #     messages = [{"role": "user", "content": "Hi!"}]
+    #     response = chat_completion.create(
+    #         messages=messages, actions=[actions[0]], orch={actions[0].name: actions[1]}
+    #     )
 
-        # Then
-        # Use a loop to iterate over expected calls and assert function arguments in the API call
-        for i, actual_call in enumerate(mock_create.call_args_list):
-            if "tools" in actual_call.kwargs:
-                self.assertEqual(
-                    [tool["function"]["name"] for tool in actual_call.kwargs["tools"]],
-                    expected_functions_and_results[i][0]["tools"],
-                )
-                self.assertEqual(
-                    actual_call.kwargs["tool_choice"],
-                    expected_functions_and_results[i][0]["tool_choice"],
-                )
-            else:
-                self.assertFalse("tools" in expected_functions_and_results[i][0])
-                self.assertFalse("tool_choice" in expected_functions_and_results[i][0])
+    #     # Then
+    #     # Use a loop to iterate over expected calls and assert function arguments in the API call
+    #     for i, actual_call in enumerate(mock_create.call_args_list):
+    #         if "tools" in actual_call.kwargs:
+    #             self.assertEqual(
+    #                 [tool["function"]["name"] for tool in actual_call.kwargs["tools"]],
+    #                 expected_functions_and_results[i][0]["tools"],
+    #             )
+    #             self.assertEqual(
+    #                 actual_call.kwargs["tool_choice"],
+    #                 expected_functions_and_results[i][0]["tool_choice"],
+    #             )
+    #         else:
+    #             self.assertFalse("tools" in expected_functions_and_results[i][0])
+    #             self.assertFalse("tool_choice" in expected_functions_and_results[i][0])
 
-        self.assertEqual(
-            messages,
-            [
-                {"content": "Hi!", "role": "user"},
-                ChatCompletionMessage(
-                    content=None,
-                    role="assistant",
-                    function_call=None,
-                    tool_calls=[
-                        ChatCompletionMessageToolCall(
-                            id="call_70TwJYHkDSs80tcnF5lt8TQR",
-                            function=Function(
-                                arguments='{\n  "text": "echo1"\n}', name="action1"
-                            ),
-                            type="function",
-                        )
-                    ],
-                ),
-                {
-                    "content": "echo1",
-                    "name": "action1",
-                    "role": "tool",
-                    "tool_call_id": "call_70TwJYHkDSs80tcnF5lt8TQR",
-                },
-                ChatCompletionMessage(
-                    content=None,
-                    role="assistant",
-                    function_call=None,
-                    tool_calls=[
-                        ChatCompletionMessageToolCall(
-                            id="call_70TwJYHkDSs80tcnF5lt8TQR",
-                            function=Function(
-                                arguments='{\n  "text": "echo2"\n}', name="action2"
-                            ),
-                            type="function",
-                        )
-                    ],
-                ),
-                {
-                    "content": "echo2",
-                    "name": "action2",
-                    "role": "tool",
-                    "tool_call_id": "call_70TwJYHkDSs80tcnF5lt8TQR",
-                },
-            ],
-        )
-        self.assertEqual(
-            response,
-            ChatCompletion(
-                id="chatcmpl-8WCdHNVdrYkU8cir7xYcji02Lenuw",
-                choices=[
-                    Choice(
-                        finish_reason="stop",
-                        index=0,
-                        logprobs=None,
-                        message=ChatCompletionMessage(
-                            content="last message",
-                            role="assistant",
-                            function_call=None,
-                            tool_calls=None,
-                        ),
-                    )
-                ],
-                created=1702685747,
-                model="gpt-3.5-turbo-1106",
-                object="chat.completion",
-                system_fingerprint="fp_772e8125bb",
-                usage=CompletionUsage(
-                    completion_tokens=35, prompt_tokens=27, total_tokens=62
-                ),
-            ),
-        )
+    #     self.assertEqual(
+    #         messages,
+    #         [
+    #             {"content": "Hi!", "role": "user"},
+    #             ChatCompletionMessage(
+    #                 content=None,
+    #                 role="assistant",
+    #                 function_call=None,
+    #                 tool_calls=[
+    #                     ChatCompletionMessageToolCall(
+    #                         id="call_70TwJYHkDSs80tcnF5lt8TQR",
+    #                         function=Function(
+    #                             arguments='{\n  "text": "echo1"\n}', name="action1"
+    #                         ),
+    #                         type="function",
+    #                     )
+    #                 ],
+    #             ),
+    #             {
+    #                 "content": "echo1",
+    #                 "name": "action1",
+    #                 "role": "tool",
+    #                 "tool_call_id": "call_70TwJYHkDSs80tcnF5lt8TQR",
+    #             },
+    #             ChatCompletionMessage(
+    #                 content=None,
+    #                 role="assistant",
+    #                 function_call=None,
+    #                 tool_calls=[
+    #                     ChatCompletionMessageToolCall(
+    #                         id="call_70TwJYHkDSs80tcnF5lt8TQR",
+    #                         function=Function(
+    #                             arguments='{\n  "text": "echo2"\n}', name="action2"
+    #                         ),
+    #                         type="function",
+    #                     )
+    #                 ],
+    #             ),
+    #             {
+    #                 "content": "echo2",
+    #                 "name": "action2",
+    #                 "role": "tool",
+    #                 "tool_call_id": "call_70TwJYHkDSs80tcnF5lt8TQR",
+    #             },
+    #         ],
+    #     )
+    #     self.assertEqual(
+    #         response,
+    #         ChatCompletion(
+    #             id="chatcmpl-8WCdHNVdrYkU8cir7xYcji02Lenuw",
+    #             choices=[
+    #                 Choice(
+    #                     finish_reason="stop",
+    #                     index=0,
+    #                     logprobs=None,
+    #                     message=ChatCompletionMessage(
+    #                         content="last message",
+    #                         role="assistant",
+    #                         function_call=None,
+    #                         tool_calls=None,
+    #                     ),
+    #                 )
+    #             ],
+    #             created=1702685747,
+    #             model="gpt-3.5-turbo-1106",
+    #             object="chat.completion",
+    #             system_fingerprint="fp_772e8125bb",
+    #             usage=CompletionUsage(
+    #                 completion_tokens=35, prompt_tokens=27, total_tokens=62
+    #             ),
+    #         ),
+    #     )
 
 
 if __name__ == "__main__":

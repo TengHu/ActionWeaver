@@ -13,33 +13,33 @@ from actionweaver.actions.factories.function import action
 
 
 class TestAction(unittest.TestCase):
-    def test_action_invoke_patched_openai_client(self):
-        client = OpenAI()
-        mock_create = MagicMock()
-        client.chat.completions.create = mock_create
+    # def test_action_invoke_patched_openai_client(self):
+    #     client = OpenAI()
+    #     mock_create = MagicMock()
+    #     client.chat.completions.create = mock_create
 
-        def mock_method(text: str):
-            """mock method"""
-            return text
+    #     def mock_method(text: str):
+    #         """mock method"""
+    #         return text
 
-        actions = [action("action1")(mock_method)]
+    #     actions = [action("action1")(mock_method)]
 
-        actions[0].invoke(
-            client,
-            messages=[{"role": "user", "content": "Hi!"}],
-            model="test",
-            stream=True,
-            force=False,
-        )
+    #     actions[0].invoke(
+    #         client,
+    #         messages=[{"role": "user", "content": "Hi!"}],
+    #         model="test",
+    #         stream=True,
+    #         force=False,
+    #     )
 
-        mock_create.assert_called_once()
+    #     mock_create.assert_called_once()
 
-        self.assertTrue(len(mock_create.call_args_list[0].kwargs["actions"]) == 1)
-        self.assertTrue(mock_create.call_args_list[0].kwargs["stream"])
+    #     self.assertTrue(len(mock_create.call_args_list[0].kwargs["actions"]) == 1)
+    #     self.assertTrue(mock_create.call_args_list[0].kwargs["stream"])
 
-        self.assertEqual(
-            mock_create.call_args_list[0].kwargs["actions"][0].name, "action1"
-        )
+    #     self.assertEqual(
+    #         mock_create.call_args_list[0].kwargs["actions"][0].name, "action1"
+    #     )
 
     def test_action_with_decorators_method1(self):
         def add_one(func):

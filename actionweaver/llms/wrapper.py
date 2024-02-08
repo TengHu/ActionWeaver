@@ -6,7 +6,7 @@ from actionweaver.llms.azure.chat_loop import create_chat_loop as create_chat_lo
 from actionweaver.llms.openai.tools.chat_loop import create_chat_loop
 
 
-class LLMClientWrapper:
+class ActionWeaverLLMClientWrapper:
     def __init__(self, client: Union[OpenAI, AzureOpenAI]):
 
         self.client = client
@@ -22,4 +22,4 @@ class LLMClientWrapper:
 
 
 def wrap(client: Union[OpenAI, AzureOpenAI]):
-    return LLMClientWrapper(client)
+    return ActionWeaverLLMClientWrapper(client)
