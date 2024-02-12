@@ -7,7 +7,7 @@ ActionWeaver is a comprehensive framework designed for developing applications p
 
 At a high level, ActionWeaver simplifies the process of creating functions, orchestrating them, and handling the invocation loop. An "action" in this context serves as an abstraction of functions or tools that users want the Language Model (LLM) to handle.
 
-<img src="./figures/function_loop.png">
+<img src="../../figures/function_loop.png">
 
 
 ActionWeaver's vision is to pioneer a new era in program development by seamlessly merging traditional programming techniques with the powerful reasoning capabilities of Language Model Models.
