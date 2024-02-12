@@ -75,7 +75,8 @@ orch = {
 This configuration instructs the LLM to first execute the plan_tasks_and_solve action, followed by the summarize_info action to condense the results and present them directly to the user. For further details on function orchestration, refer to [here](https://github.com/TengHu/ActionWeaver?tab=readme-ov-file#orchestration-of-actions-experimental)
 
 
-A sketch implementation of the TaskPlanner class
+For the complete working example, please refer to [here](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/langsmith.html).
+A sketch implementation of the TaskPlanner class is shown below:
 ```python 
 class TaskPlanner:
     def __init__(self, llm, eh):
@@ -122,7 +123,3 @@ response = task_planner("""Discover the establishment year of the university att
 [LangSmith Trace](https://smith.langchain.com/public/3d3a6e18-79f6-44b1-9efc-ee8f9b1df587/r):
 
 <img src="../notebooks/cookbooks/figures/langsmith.png">
-
-
-For the complete working notebook, please refer to [here](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/langsmith.html)
-
