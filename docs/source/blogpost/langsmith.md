@@ -12,7 +12,7 @@ Because ActionWeaver's just a lightweight framework centered around functions ca
 By the end of this blog post, you will learn how to effectively use the LangSmith tracing with ActionWeaver. For the complete working notebook, please refer to [here](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/langsmith.html)
 
 
-Let's first explore some basic concepts first.
+Let's first explore some basic concepts.
 
 - `action`: A fundamental component in ActionWeaver, it represents a tool that can be used by LLM. Each action comprises two main elements: a Pydantic model that is generated to facilitate structured prompting, and a conventional Python function.
 
