@@ -1,4 +1,4 @@
-# Function Tracing with LangSmith
+# Traceable Function Calling with LangSmith
 
 In this post, we are going to build a task planning agent with ActionWeaver and LangSmith for better debugging and tracing capabilities!
 
