@@ -9,7 +9,7 @@ In this post, we are going to build a task planning agent with ActionWeaver and 
 Because ActionWeaver's just a lightweight framework centered around functions calling with LLM, the integration between two is seamless and almost native! 
 
 
-By the end of this blog post, you will learn how to effectively use the LangSmith tracing with ActionWeaver. For the complete working notebook, please refer to [here](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/langsmith.html)
+By the end of this blog post, you will learn how to effectively use the LangSmith tracing with ActionWeaver. For the complete working notebook, please refer to [here](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/langsmith.html).
 
 
 Let's first explore some basic concepts.
@@ -72,10 +72,10 @@ orch = {
 }
 ```
 
-This configuration instructs the LLM to first execute the plan_tasks_and_solve action, followed by the summarize_info action to condense the results and present them directly to the user. For further details on function orchestration, refer to [ActionWeaver](https://github.com/TengHu/ActionWeaver?tab=readme-ov-file#orchestration-of-actions-experimental)
+This configuration instructs the LLM to first execute the plan_tasks_and_solve action, followed by the summarize_info action to condense the results and present them directly to the user. For further details on function orchestration, refer to [here](https://github.com/TengHu/ActionWeaver?tab=readme-ov-file#orchestration-of-actions-experimental)
 
 
-A sketch implementation of the TaskPlanner class:
+A sketch implementation of the TaskPlanner class
 ```python 
 class TaskPlanner:
     def __init__(self, llm, eh):
