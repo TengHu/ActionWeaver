@@ -15,4 +15,4 @@ ActionWeaver's vision is to pioneer a new era in program development by seamless
 ## Get started
 [Here](installation.md)'s how to install ActionWeaver.
 
-**We strongly encourage you to explore our [cookbooks](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html), where you can find tutorials and a wide range of examples to help you become familiar with the framework and its capabilities.**
+We strongly encourage you to explore our [cookbooks](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html), where you can find tutorials and a wide range of examples to help you become familiar with the framework and its capabilities.
