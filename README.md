@@ -58,10 +58,10 @@ pip install actionweaver
 
 Use the **LATEST** OpenAI API that supports parallel function calling !
 ```python
-from actionweaver.llms import patch
+from actionweaver.llms import wrap
 from openai import OpenAI
 
-openai_client = patch(OpenAI())
+openai_client = wrap(OpenAI())
 ```
 
 or using Azure OpenAI service to start a chat completion model
@@ -69,7 +69,7 @@ or using Azure OpenAI service to start a chat completion model
 import os
 from openai import AzureOpenAI
 
-azure_client = patch(AzureOpenAI(
+azure_client = wrap(AzureOpenAI(
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT"), 
     api_key=os.getenv("AZURE_OPENAI_KEY"),  
     api_version="2023-10-01-preview"
@@ -98,7 +98,7 @@ def get_current_time() -> str:
     return f"The current time is {current_time}"
 
 # Ask LLM what time is it
-response = openai_client.chat.completions.create(
+response = openai_client.create(
   model="gpt-3.5-turbo",
   messages=[{"role": "user", "content": "what time is it"}],
   actions = [get_current_time]
@@ -115,7 +115,7 @@ from langchain_community.utilities.google_search import GoogleSearchAPIWrapper
 
 search_tool = GoogleSearchRun(api_wrapper=GoogleSearchAPIWrapper())
 
-openai_client.chat.completions.create(
+openai_client.create(
   model="gpt-3.5-turbo",
   messages=[{"role": "user", "content": "what date is today?"}],
   actions = [action_from_tool(search_tool)]
@@ -150,13 +150,13 @@ Developers also could create a class and enhance its functionality using ActionW
 
 ```python
 from openai import OpenAI
-from actionweaver.llms import patch
+from actionweaver.llms import wrap
 from actionweaver import action
 
 
 class AgentV0:
     def __init__(self):
-        self.llm = patch(OpenAI())
+        self.llm = wrap(OpenAI())
         self.messages = []
         self.times = []
     
@@ -236,7 +236,7 @@ ActionWeaver enables the design of hierarchies and chains of actions by passing 
 For example, let's say we have actions a1, a2, a3.
  
 ```python
-client.chat.completions.create(
+client.create(
     [
         {"role": "user", "content": "message"} 
     ],
