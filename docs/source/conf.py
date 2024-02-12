@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "ActionWeaver"
 copyright = '2023, Teng "Niel" Hu'
 author = 'Teng "Niel" Hu'
-release = "0.0.9"
+release = "0.0.24"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
