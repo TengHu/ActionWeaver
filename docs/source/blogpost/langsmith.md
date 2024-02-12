@@ -1,14 +1,4 @@
----
-draft: False
-date: 2024-02-11
-slug: patching
-tags:
-  - open source
-authors:
-  - niel.hu
----
 # Function Tracing with LangSmith
-
 
 In this post, we are going to build a task planning agent with ActionWeaver and LangSmith for better debugging and tracing capabilities!
 
