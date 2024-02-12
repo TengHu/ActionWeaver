@@ -11,8 +11,8 @@ def create_pydantic_model_from_func_v0(
     func: Callable,
     model_name: str,
     base_model: Type[BaseModel] = BaseModel,
-    config: ConfigDict | None = None,
-    validators: dict[str, classmethod] | None = None,
+    config: ConfigDict = None,
+    validators: dict[str, classmethod] = None,
     nested_models=None,  # models: Optional pydantic models needed for the pydantic model from function signature
     override_params=None,  # override_params: Optional dictionary of parameters to override kwarg and non-kwarg.
     ignored_params=None,  # ignored_params: Optional list of parameters to ignore.
@@ -136,7 +136,7 @@ def create_pydantic_model_from_func(
     model_name: str,
     func: Callable,
     base_model: Type[BaseModel] = BaseModel,
-    config: ConfigDict | None = None,
+    config: ConfigDict = None,
     validators: Dict[str, classmethod] = None,
     override_params: Dict[str, Any] = None,
     ignored_params: List[str] = None,
