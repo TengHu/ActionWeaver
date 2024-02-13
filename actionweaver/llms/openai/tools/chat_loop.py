@@ -261,6 +261,7 @@ def create_chat_loop(original_create_method):
                             e,
                             ChatLoopInfo(
                                 context={
+                                    "response": api_response,
                                     "tools": tools,
                                     "messages": messages,
                                     "model": model,
