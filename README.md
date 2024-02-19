@@ -12,9 +12,11 @@
 
 # ActionWeaver
 
-🪡 AI application framework that puts function-calling as a first-class feature 🪡
+🪡 AI application framework that makes function calling with LLM easier🪡
 
-**Supporting both OpenAI API and Azure OpenAI service!**
+Designed for simplicity,  only relying on OpenAI and Pydantic.
+
+Supporting both OpenAI API and Azure OpenAI service!
 
 ---
 🚀  **[Explore Our Cookbooks For Tutorials & Examples!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)** 🚀 
