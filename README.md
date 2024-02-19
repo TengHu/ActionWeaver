@@ -13,20 +13,12 @@
 # ActionWeaver
 
 🪡 AI application framework that makes function calling with LLM easier🪡
+- Designed for simplicity,  only relying on OpenAI and Pydantic.
+- Supporting both OpenAI API and Azure OpenAI service!
 
-Designed for simplicity,  only relying on OpenAI and Pydantic.
+[Explore Our Cookbooks For Tutorials & Examples!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)
 
-Supporting both OpenAI API and Azure OpenAI service!
-
----
-🚀  **[Explore Our Cookbooks For Tutorials & Examples!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)** 🚀 
-
-
-Discord: https://discord.gg/fnsnBB99C2
-
-**Considering about using LLM in your business or application ? We'd love to provide help and consultation, let's chat !**
-
-Feel free to get in touch! Contact us at niel.hu@actionweaverai.com
+[Discord](https://discord.gg/fnsnBB99C2)
 
 ---
 
@@ -42,20 +34,19 @@ Feel free to get in touch! Contact us at niel.hu@actionweaverai.com
 
 [Star us on Github!](https://github.com/TengHu/ActionWeaver)
 
-ActionWeaver is an AI application framework that is designed based on the concept of LLM function calling, while popular frameworks like Langchain and Haystack are built around the concept of pipelines. ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
-
-Our vision is to enable seamlessly merging traditional computing systems with the powerful reasoning capabilities of Language Model Models.
+ActionWeaver strives to be the most reliable, user-friendly, high-speed, and cost-effective function-calling framework for AI engineers.
 
 Features:
 - **Function Calling as First-Class Citizen**: Put function-calling at the core of the framework.
 - **Extensibility**: Integrate ANY Python code into your agent's toolbox with a single line of code, or combining tools from other ecosystems like LangChain or Llama Index.
 - **Function Orchestration**: Build complex orchestration of function callings. including intricate hierarchies or chains.
-- **Telemetry and Observability**: ActionWeaver's design places a strong emphasis on developer experience and efficiency. Take a look at [this link](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/logging.html) to see how ActionWeaver implements LLM telemetry, including tracing.
+- **Telemetry and Observability**: Easy integration with platforms like [LangSmith to build tracable application](https://github.com/TengHu/ActionWeaver/blob/main/docs/source/blogpost/langsmith.md
+). Also take a look at [this link](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/logging.html) to see how ActionWeaver uses structured logging.
 
-
+<!--
 At a high level, ActionWeaver simplifies the process of creating functions, orchestrating them, and handling the invocation loop. An "action" in this context serves as an abstraction of functions or tools that users want the Language Model (LLM) to handle.
 
-<img src="docs/figures/function_loop.png">
+ <img src="docs/figures/function_loop.png"> -->
 
 
 ## Installation
