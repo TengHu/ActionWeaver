@@ -28,7 +28,7 @@ Feel free to get in touch! Contact us at niel.hu@actionweaverai.com
 
 ---
 
-To quickly become familiar with ActionWeaver, please take a look at notebooks listed below.
+**TO GET STARTED:**
 - [QuickStart](docs/source/notebooks/cookbooks/quickstart.ipynb)
 - [Using Pydantic for Structured Data Parsing and Validation](docs/source/notebooks/cookbooks/pydantic.ipynb)
 - [Function Validation with Pydantic and Exception Handler](docs/source/blogpost/function_validation.md)
