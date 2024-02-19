@@ -143,8 +143,30 @@ response = ingest_user_info.invoke(
     exception_handler = ExceptionRetryHandler(3)
 )
 ```
-We anticipate the LLM to call the `ingest_user_info` function, resulting in the formatted data being inserted into the `user_db` as depicted below.
-
+We expect the LLM to execute the `ingest_user_info` function, potentially encountering a ValidationError. If so, it should attempt a retry, ideally leading to the invocation of the function with properly formatted data. 
+```
+Retrying. Retries left: 2
+Exception raised: ValidationError: 6 validation errors for ingest_user_info
+users.0.name
+  Value error, Name must contain a first name and a last name separated by a space [type=value_error, input_value='Dr. Danielle King', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.6/v/value_error
+users.0.phone_number
+  Value error, phone number must be in the format +1 (XXX) XXX-XXXX [type=value_error, input_value='(844)055-3780', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.6/v/value_error
+users.1.name
+  Value error, Name must be in uppercase [type=value_error, input_value='John Miller', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.6/v/value_error
+users.1.phone_number
+  Value error, phone number must be in the format +1 (XXX) XXX-XXXX [type=value_error, input_value='+1-268-920-5475x5', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.6/v/value_error
+users.2.name
+  Value error, Name must be in uppercase [type=value_error, input_value='Michael Johnson', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.6/v/value_error
+users.2.phone_number
+  Value error, phone number must be in the format +1 (XXX) XXX-XXXX [type=value_error, input_value='+1-758-232-6153x8', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.6/v/value_error
+```
+Eventually, the formatted data should be successfully inserted into the `user_db`.
 ```python
 [[UserModel(name='DANIELLE KING', phone_number='+1 (844) 055-3780'),
   UserModel(name='JOHN MILLER', phone_number='+1 (268) 920-5475'),
@@ -152,3 +174,4 @@ We anticipate the LLM to call the `ingest_user_info` function, resulting in the 
 ```
 
 For the complete working notebook, please refer to [here](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/function_validation_and_exception_handling.html).
+
