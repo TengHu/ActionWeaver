@@ -77,6 +77,9 @@ azure_client = wrap(AzureOpenAI(
 ))
 ```
 
+The ActionWeaver wrapped client will provide a `create` API to substitute the original `chat.completions.create` API. The new API, `create`, will  pass on all original arguments while also introducing additional parameters like `action` and `orch`.
+
+You always have the option to fallback to the original OpenAI client by accessing `openai_client.client`.
 
 ### Add ANY Python function as a tool to the Large Language Model.
 Developers can attach **ANY** Python function as a tool with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
@@ -163,7 +166,7 @@ class AgentV0:
     
     def __call__(self, text):
         self.messages += [{"role": "user", "content":text}]
-        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.get_current_time])
+        return self.llm.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.get_current_time])
         
     @action(name="GetCurrentTime")
     def get_current_time(self) -> str:
