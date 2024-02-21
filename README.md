@@ -13,8 +13,8 @@
 # ActionWeaver
 
 🪡 AI application framework that makes function calling with LLM easier🪡
-- Designed for simplicity,  only relying on OpenAI and Pydantic.
-- Supporting both OpenAI API and Azure OpenAI service!
+- **Designed for simplicity,  only relying on OpenAI and Pydantic.**
+- **Supporting both OpenAI API and Azure OpenAI service!**
 
 [Explore Our Cookbooks For Tutorials & Examples!](https://actionweaver.readthedocs.io/en/latest/notebooks/cookbooks/cookbook.html)
 
@@ -22,7 +22,7 @@
 
 ---
 
-**TO GET STARTED:**
+**NOTEBOOKS TO GET STARTED:**
 - [QuickStart](docs/source/notebooks/cookbooks/quickstart.ipynb)
 - [Using Pydantic for Structured Data Parsing and Validation](docs/source/notebooks/cookbooks/pydantic.ipynb)
 - [Function Validation with Pydantic and Exception Handler](docs/source/blogpost/function_validation.md)
@@ -65,7 +65,7 @@ from openai import OpenAI
 openai_client = wrap(OpenAI())
 ```
 
-or using Azure OpenAI service to start a chat completion model
+or using Azure OpenAI service
 ```python
 import os
 from openai import AzureOpenAI
@@ -76,13 +76,21 @@ azure_client = wrap(AzureOpenAI(
     api_version="2023-10-01-preview"
 ))
 ```
+The ActionWeaver wrapped client will manage the function calling loop, which includes passing function descriptions, executing functions with arguments returned by llm, and handling exceptions.
 
-The ActionWeaver wrapped client will provide a `create` API to substitute the original `chat.completions.create` API. The new API, `create`, will  pass on all original arguments while also introducing additional parameters like `action` and `orch`.
+This client will expose a `create` API built upon the original `chat.completions.create` API. The enhanced `create` API will retain all original arguments and include additional parameters such as:
+- `action`: providing available actions to LLM.
+- `orch`: orchestrating actions throughout the function calling loop.
+- `exception_handler`: an object guiding the function calling loop on how to handle exceptions.
+These arguments will be demonstrated in the subsequent sections.
 
-You always have the option to fallback to the original OpenAI client by accessing `openai_client.client`.
+These additional arguments are optional, and there's always the fallback option to access the original OpenAI client via `openai_client.client`.
 
-### Add ANY Python function as a tool to the Large Language Model.
-Developers can attach **ANY** Python function as a tool with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
+> **Note**: An `action` represents a tool that can be used by LLM. Each action comprises two main elements: a Pydantic model that is auto-generated to facilitate prompting, and a conventional Python function. 
+
+### Add ANY Python function as an action to the Large Language Model.
+
+Developers can attach **ANY** Python function as an action with a simple decorator. In the following example, we introduce action `GetCurrentTime`, and then proceed to use the OpenAI API to invoke it.
 
 ActionWeaver utilizes the decorated method's signature and docstring as a description, passing them along to OpenAI's function API. The Action decorator is also highly adaptable and can be combined with other decorators, provided that the original signature is preserved.
 
@@ -109,32 +117,14 @@ response = openai_client.create(
 )
 ```
 
-### Easily integrate tools from libraries such as [Langchain](https://github.com/langchain-ai/langchain/tree/master/libs/community)
-
-```python
-from actionweaver.actions.factories.langchain import action_from_tool
-
-from langchain_community.tools.google_search.tool import GoogleSearchRun
-from langchain_community.utilities.google_search import GoogleSearchAPIWrapper
-
-search_tool = GoogleSearchRun(api_wrapper=GoogleSearchAPIWrapper())
-
-openai_client.create(
-  model="gpt-3.5-turbo",
-  messages=[{"role": "user", "content": "what date is today?"}],
-  actions = [action_from_tool(search_tool)]
-)
-```
-
 ### Force execution of an action
-You can also force the language model to execute the action. 
+You can also compel the language model to execute the action by calling the `invoke` method of an action. Its arguments includes the ActionWeaver-wrapped client and other arguments passed to the create API.
 ```python 
 get_current_time.invoke(openai_client, messages=[{"role": "user", "content": "what time is it"}], model="gpt-3.5-turbo", stream=False, force=True)
-
 ```
 
 ### Structured extraction
-You can create a Pydantic model to define the structure of the data you want to extract, and then force the language model to extract structured data from information in the prompt.
+You can create a Pydantic model to define the structural data you want to extract, create an action using `action_from_model` and then force the language model to extract structured data from information in the prompt.
 
 ```python
 from pydantic import BaseModel
@@ -146,96 +136,15 @@ class User(BaseModel):
 
 action_from_model(User, stop=True).invoke(client, messages=[{"role": "user", "content": "Tom is 31 years old"}], model="gpt-3.5-turbo", stream=False, force=False)
 ```
+> **Note**: The `stop` property of an action, with a default value of False, determines whether the function calling loop will immediately return the action's result instead of passing it to LLM if set to True.
 
-
-##  Actions of Stateful Agent 
-
-Developers also could create a class and enhance its functionality using ActionWeaver's action decorators.
-
-```python
-from openai import OpenAI
-from actionweaver.llms import wrap
-from actionweaver import action
-
-
-class AgentV0:
-    def __init__(self):
-        self.llm = wrap(OpenAI())
-        self.messages = []
-        self.times = []
-    
-    def __call__(self, text):
-        self.messages += [{"role": "user", "content":text}]
-        return self.llm.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.get_current_time])
-        
-    @action(name="GetCurrentTime")
-    def get_current_time(self) -> str:
-        """
-        Use this for getting the current time in the specified time zone.
-        
-        :return: A string representing the current time in the specified time zone.
-        """
-        import datetime
-        current_time = datetime.datetime.now()
-
-        self.times += [str(current_time)]
-        
-        return f"The current time is {current_time}"
-
-agent = AgentV0()
-
-agent("what time is it") # Output: 'The current time is 20:34.'
-
-# You can invoke actions just like regular instance methods
-agent.get_current_time() # Output: 'The current time is 20:34.'
-```
-
-
-
-##  Grouping and Extending Actions Through Inheritance
-
-In this example, we wrap the [LangChain Google search](https://python.langchain.com/docs/integrations/tools/google_search) as a method, and define a new agent that inherits the previous agent and LangChain search tool. This approach leverages object-oriented principles to enable rapid development and easy expansion of the agent's capabilities.
-
-In the example below, through inheritance, the new agent can utilize the Google search tool method as well as any other actions defined in the parent classes.
-```python
-class LangChainTools:
-    @action(name="GoogleSearch")
-    def google_search(self, query: str) -> str:
-        """
-        Perform a Google search using the provided query. 
-        
-        This action requires `langchain` and `google-api-python-client` installed, and GOOGLE_API_KEY, GOOGLE_CSE_ID environment variables.
-        See https://python.langchain.com/docs/integrations/tools/google_search.
-
-        :param query: The search query to be used for the Google search.
-        :return: The search results as a string.
-        """
-        from langchain.utilities import GoogleSearchAPIWrapper
-
-        search = GoogleSearchAPIWrapper()
-        return search.run(query)
-    
-class AgentV1(AgentV0, LangChainTools):
-    def __call__(self, text):
-        self.messages += [{"role": "user", "content":text}]
-        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.google_search])
-
-agent = AgentV1()
-agent("what happened today")
-
-"""
-Output: Here are some events that happened or are scheduled for today (August 23, 2023):\n\n1. Agreement State Event: Event Number 56678 - Maine Radiation Control Program.\n2. Childbirth Class - August 23, 2023, at 6:00 pm.\n3. No events scheduled for August 23, 2023, at Ambassador.\n4. Fine Arts - Late Start.\n5. Millersville University events.\n6. Regular City Council Meeting - August 23, 2023, at 10:00 AM.\n\nPlease note that these are just a few examples, and there may be other events happening as well.
-"""
-```
-
-## Orchestration of Actions (Experimental)
+## Orchestration of Actions
 
 ActionWeaver enables the design of hierarchies and chains of actions by passing in `orch` argument. `orch` is a mapping from actions as keys to values including
 
 -  a list of actions: if the key action is invoked, LLM will proceed to choose an action from the provided list, or respond with a text message.
 -  an action: after key action is invoked, LLM will invoke the value action.
 -  None: after key action is invoked, LLM will respond with a text message.
-
 
 For example, let's say we have actions a1, a2, a3.
  
@@ -255,68 +164,29 @@ client.create(
 )
 ```
 
+## Exception Handling
 
-### Example: Hierarchy of Actions
+Users can provide a specific implementation of ExceptionHandler, where the `handle_exception` method is invoked upon encountering an exception. The `info` parameter encapsulates contextual details such as messages and API responses within a dictionary.
 
-Instead of overwhelming OpenAI with an extensive list of functions, we can design a hierarchy of actions. In this example, we introduce a new class that defines three specific actions, reflecting a hierarchical approach:
-
-
+The `handle_exception` method dictates the course of action for the function calling loop, returning either:
+- `Return`: providing immediate content back to the user
+- `Continue`: instructing the loop to proceed.
 
 ```python
-from typing import List
-import os
-class FileAgent(AgentV0):
-    @action(name="FileHandler")
-    def handle_file(self, instruction: str) -> str:
-        """
-        Handles ALL user instructions related to file operations.
-    
-        Args:
-            instruction (str): The user's instruction about file handling.
-    
-        Returns:
-            str: The response to the user's question.
-        """
-        print (f"Handling {instruction}")
-        return instruction
-        
+from actionweaver.llms import  ExceptionAction, ChatLoopInfo, Continue, Return
 
-    @action(name="ListFiles")
-    def list_all_files_in_repo(self, repo_path: str ='.') -> List:
-        """
-        Lists all the files in the given repository.
-    
-        :param repo_path: Path to the repository. Defaults to the current directory.
-        :return: List of file paths.
-        """
+class ExceptionHandler(ABC):
+    """Base class for exception handlers.
 
-        print(f"list_all_files_in_repo: {repo_path}")
-        
-        file_list = []
-        for root, _, files in os.walk(repo_path):
-            for file in files:
-                file_list.append(os.path.join(root, file))
-            break
-        return file_list
+    This class provides a framework for handling exceptions within the function calling loop.
+    """
 
-    @action(name="ReadFile")
-    def read_from_file(self, file_path: str) -> str:
-        """
-        Reads the content of a file and returns it as a string.
-    
-        :param file_path: The path to the file that needs to be read.
-        :return: A string containing the content of the file.
-        """
-        print(f"read_from_file: {file_path}")
-        
-        with open(file_path, 'r') as file:
-            content = file.read()
-        return f"The file content: \n{content}"
-
-    def __call__(self, text):
-        self.messages += [{"role": "user", "content":text}]
-        return self.llm.chat.completions.create(model="gpt-3.5-turbo", messages=self.messages, actions = [self.list_all_files_in_repo], orch = {self.handle_file.name: [self.list_all_files_in_repo, self.read_from_file]})
+    @abstractmethod
+    def handle_exception(self, e: Exception, info: ChatLoopInfo) -> ExceptionAction:
+        pass
 ```
+
+Take a look at this [example](https://github.com/TengHu/ActionWeaver/blob/main/docs/source/blogpost/function_validation.md) for details.
 
 ## Contributing
 Contributions in the form of bug fixes, new features, documentation improvements, and pull requests are VERY welcomed.
