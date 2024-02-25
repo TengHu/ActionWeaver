@@ -202,6 +202,6 @@ If you find ActionWeaver useful, please consider citing the project:
     month = Aug,
     title = {ActionWeaver: Application Framework for LLMs},
     url = {https://github.com/TengHu/ActionWeaver},
-    year = {2023}
+    year = {2024}
 }
 ```
