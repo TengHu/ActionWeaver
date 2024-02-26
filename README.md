@@ -116,6 +116,21 @@ response = openai_client.create(
   actions = [get_current_time]
 )
 ```
+Take a look what is passing to OpenAI API
+```python
+get_current_weather.get_function_details()
+
+"""
+{'name': 'GetWeather',
+ 'description': 'Get the current weather in a given location',
+ 'parameters': {'properties': {'location': {'title': 'Location'},
+   'unit': {'default': 'fahrenheit', 'title': 'Unit'}},
+  'required': ['location'],
+  'title': 'Get_Current_Weather',
+  'type': 'object'}}
+"""
+```
+
 
 ### Force execution of an action
 You can also compel the language model to execute the action by calling the `invoke` method of an action. Its arguments includes the ActionWeaver-wrapped client and other arguments passed to the create API.
@@ -138,6 +153,7 @@ action_from_model(User, stop=True).invoke(client, messages=[{"role": "user", "co
 ```
 > **Note**: The `stop` property of an action, with a default value of False, determines whether the function calling loop will immediately return the action's result instead of passing it to LLM if set to True.
 
+> **Note**: You can simultaneously pass actions generated from both functions and Pydantic models.
 ## Orchestration of Actions
 
 ActionWeaver enables the design of hierarchies and chains of actions by passing in `orch` argument. `orch` is a mapping from actions as keys to values including
