@@ -1,6 +1,5 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/actionweaver?color=6cc644) 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/actionweaver)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/TengHu/ActionWeaver/issues)
 
 
