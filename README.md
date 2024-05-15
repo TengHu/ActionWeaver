@@ -110,7 +110,7 @@ def get_current_time() -> str:
 
 # Ask LLM what time is it
 response = openai_client.create(
-  model="gpt-3.5-turbo",
+  model="gpt-4o",
   messages=[{"role": "user", "content": "what time is it"}],
   actions = [get_current_time]
 )
